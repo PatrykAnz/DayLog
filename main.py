@@ -1,8 +1,8 @@
 from pathlib import Path
 import json
 import os
-from api.geolocation import geolocation
-
+from api.geolocation import get_geolocation
+from api.weather import get_weather
 data_folder = Path("user_data")
 data_file = data_folder / "user_data.json"
 
@@ -22,9 +22,7 @@ def create_user_data():
             json.dump({},f)
         print("Created 'user_data.json' file.")
 
-def weather():
-    print("Weather functionality coming soon!")
-    return None
+
 
 def get_user_choice():
     choices={
@@ -42,9 +40,9 @@ def get_user_choice():
             if user_choice in choices:
                 print(f"{choices[user_choice]}:")
                 if user_choice == 1:
-                    geolocation()
+                    get_geolocation()
                 elif user_choice == 2:
-                    weather()
+                    get_weather()
                 input("Press enter to return")
                 cls()
             else:
