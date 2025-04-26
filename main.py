@@ -1,6 +1,11 @@
 from pathlib import Path
 import json
 import os
+from api.geolocation import geolocation
+
+data_folder = Path("user_data")
+data_file = data_folder / "user_data.json"
+
 def cls():
     os.system('cls' if os.name == 'nt' else 'clear')
 
@@ -8,9 +13,6 @@ def print_separator():
     print("-"*50)
 
 def create_user_data():
-    data_folder = Path("user_data")
-    data_file = data_folder / "user_data.json"
-
     if not data_folder.exists():
         data_folder.mkdir()
         print("Created 'user_data' folder.")
@@ -20,10 +22,14 @@ def create_user_data():
             json.dump({},f)
         print("Created 'user_data.json' file.")
 
+def weather():
+    print("Weather functionality coming soon!")
+    return None
+
 def get_user_choice():
     choices={
-       1:"Weather",
-       2:"Geolocation"
+       1:"Geolocation",
+       2:"Weather"
     }
     total_amount = len(choices)
     while True:
@@ -35,6 +41,10 @@ def get_user_choice():
             user_choice = int(input(""))
             if user_choice in choices:
                 print(f"{choices[user_choice]}:")
+                if user_choice == 1:
+                    geolocation()
+                elif user_choice == 2:
+                    weather()
                 input("Press enter to return")
                 cls()
             else:
