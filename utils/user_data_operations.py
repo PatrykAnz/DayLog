@@ -14,4 +14,3 @@ def check_and_create_user_data():
         with open(data_file, "w") as f:
             json.dump({}, f)
         print("Created 'user_data.json' file.")
-    print("CHECK")
