@@ -2,9 +2,11 @@ import requests
 from api.geolocation import get_geolocation
 from pathlib import Path
 import json
+from utils.user_data_operations import check_and_create_user_data
 
 
 def get_weather():
+    check_and_create_user_data()
     data_folder = Path("user_data")
     data_file = data_folder / "user_data.json"
 

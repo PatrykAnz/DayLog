@@ -1,6 +1,7 @@
 import geocoder
 import json
 from pathlib import Path
+from utils.user_data_operations import check_and_create_user_data
 
 choices = {
     1: "Provide the name of the city",
@@ -35,6 +36,7 @@ def get_geolocation():
                 "longitude": g.latlng[1],
                 "address": g.address,
             }
+            check_and_create_user_data()
 
             with open(data_file, "w") as f:
                 json.dump(user_data, f, indent=4)
@@ -55,6 +57,7 @@ def get_geolocation():
                 "address": g.address,
             }
 
+            check_and_create_user_data()
             with open(data_file, "w") as f:
                 json.dump(user_data, f, indent=4)
                 print(f"Saved location data to {data_file}")
