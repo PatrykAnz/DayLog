@@ -3,6 +3,7 @@ import json
 import os
 from api.geolocation import get_geolocation
 from api.weather import get_weather
+from utils.user_data_operations import check_and_create_user_data
 
 data_folder = Path("user_data")
 data_file = data_folder / "user_data.json"
@@ -16,18 +17,8 @@ def print_separator():
     print("-" * 50)
 
 
-def create_user_data():
-    if not data_folder.exists():
-        data_folder.mkdir()
-        print("Created 'user_data' folder.")
-
-    if not data_file.exists():
-        with open(data_file, "w") as f:
-            json.dump({}, f)
-        print("Created 'user_data.json' file.")
-
-
 def get_user_choice():
+    check_and_create_user_data()
     choices = {1: "Geolocation", 2: "Weather"}
     total_amount = len(choices)
     while True:
@@ -44,7 +35,6 @@ def get_user_choice():
                 elif user_choice == 2:
                     get_weather()
                 input("Press enter to return")
-                cls()
             else:
                 print_separator()
                 print("Invalid choice. Enter a number from the list.")
@@ -57,7 +47,4 @@ def get_user_choice():
 
 
 if __name__ == "__main__":
-    data_folder_path = Path("user_data")
-    if not data_folder_path.exists():
-        create_user_data()
     get_user_choice()

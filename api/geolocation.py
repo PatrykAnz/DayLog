@@ -1,6 +1,7 @@
 import geocoder
 import json
 from pathlib import Path
+from utils.user_data_operations import check_and_create_user_data
 
 choices = {
     1: "Provide the name of the city",
@@ -11,7 +12,7 @@ choices = {
 def get_geolocation():
     data_folder = Path("user_data")
     data_file = data_folder / "user_data.json"
-
+    check_and_create_user_data()
     print("Choose if you want to get it from city name or IP")
     for key, value in choices.items():
         print(f"{key}: {value}")
