@@ -12,7 +12,7 @@ choices = {
 def get_geolocation():
     data_folder = Path("user_data")
     data_file = data_folder / "user_data.json"
-
+    check_and_create_user_data()
     print("Choose if you want to get it from city name or IP")
     for key, value in choices.items():
         print(f"{key}: {value}")
@@ -36,7 +36,6 @@ def get_geolocation():
                 "longitude": g.latlng[1],
                 "address": g.address,
             }
-            check_and_create_user_data()
 
             with open(data_file, "w") as f:
                 json.dump(user_data, f, indent=4)
@@ -57,7 +56,6 @@ def get_geolocation():
                 "address": g.address,
             }
 
-            check_and_create_user_data()
             with open(data_file, "w") as f:
                 json.dump(user_data, f, indent=4)
                 print(f"Saved location data to {data_file}")
