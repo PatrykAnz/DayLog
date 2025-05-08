@@ -1,2 +1,4 @@
 geocoder
 gps3
+garminconnect
+python-dotenv
