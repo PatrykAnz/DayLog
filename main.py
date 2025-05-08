@@ -4,6 +4,7 @@ import os
 from api.geolocation import get_geolocation
 from api.weather import get_weather
 from utils.user_data_operations import check_and_create_user_data
+from utils.clock import get_clock
 
 data_folder = Path("user_data")
 data_file = data_folder / "user_data.json"
@@ -19,7 +20,7 @@ def print_separator():
 
 def get_user_choice():
     check_and_create_user_data()
-    choices = {1: "Geolocation", 2: "Weather"}
+    choices = {1: "Geolocation", 2: "Weather", 3: "Clock "}
     total_amount = len(choices)
     while True:
         print(f"Choose from 1-{total_amount}")
@@ -34,6 +35,8 @@ def get_user_choice():
                     get_geolocation()
                 elif user_choice == 2:
                     get_weather()
+                elif user_choice == 3:
+                    get_clock()
                 input("Press enter to return")
             else:
                 print_separator()
