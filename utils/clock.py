@@ -22,4 +22,3 @@ def get_clock():
     print(json.dumps(user_data))
     with open(data_file, "w") as f:
         json.dump(user_data, f, indent=4)
-    print(current_time.year)
