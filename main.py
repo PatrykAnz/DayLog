@@ -20,7 +20,7 @@ def print_separator():
 
 def get_user_choice():
     check_and_create_user_data()
-    choices = {1: "Geolocation", 2: "Weather", 3: "Clock "}
+    choices = {1: "Geolocation", 2: "Weather", 3: "Clock"}
     total_amount = len(choices)
     while True:
         print(f"Choose from 1-{total_amount}")
