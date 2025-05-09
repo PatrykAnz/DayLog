@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 from api.geolocation import get_geolocation
 from api.weather import get_weather
@@ -6,15 +5,10 @@ from api.garmin import get_garmin
 from utils.user_data_operations import check_and_create_user_data
 from utils.clock import get_clock
 from utils.notes import get_notes
-from utils.separator import print_separator
+from utils.print_helpers import print_separator, cls
 
 data_folder = Path("user_data")
 data_file = data_folder / "user_data.json"
-
-
-def cls():
-    os.system("cls" if os.name == "nt" else "clear")
-
 
 def get_user_choice():
     check_and_create_user_data()
