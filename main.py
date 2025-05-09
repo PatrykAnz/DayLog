@@ -23,16 +23,18 @@ def print_separator():
 
 def get_user_choice():
     check_and_create_user_data()
-    choices = {1: "Geolocation", 2: "Weather", 3: "Clock", 4: "Garmin", 5: "Notes"}
+    choices = {0: "Exit", 1: "Geolocation", 2: "Weather", 3: "Clock", 4: "Garmin", 5: "Notes"}
     total_amount = len(choices)
     while True:
-        print(f"Choose from 1-{total_amount}")
+        print(f"Choose from 0-{total_amount-1}")
         for key, value in choices.items():
             print(f"{key}. {value}")
 
         try:
             user_choice = int(input(""))
             if user_choice in choices:
+                if user_choice == 0:
+                    return
                 print(f"{choices[user_choice]}:")
                 if user_choice == 1:
                     get_geolocation()
