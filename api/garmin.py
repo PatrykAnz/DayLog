@@ -45,11 +45,12 @@ def get_garmin():
         )
         total_awake = sleep_data["awakeSleepSeconds"]
 
-        user_data["Garmin"] = {
+        aggregated_data = {
             "steps": total_steps,
             "sleep": total_sleep,
             "awake": total_awake
         }
+        user_data["Garmin"] = aggregated_data
         with open(data_file, "w") as f:
             json.dump(user_data, f, indent=4)
 
