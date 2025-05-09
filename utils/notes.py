@@ -30,7 +30,7 @@ def get_notes():
                 print_separator()
         except ValueError as e:
             print_separator()
-            print("An error has ocurred. Make sure you entered a number")
+            print("An error has occurred. Make sure you entered a number")
             print(f"\nError info: \n{e}")
             print_separator()
 
