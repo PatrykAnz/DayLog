@@ -12,7 +12,7 @@ data_file = data_folder / "user_data.json"
 
 def get_user_choice():
     check_and_create_user_data()
-    choices = {1: "Geolocation", 2: "Weather", 3: "Clock", 4: "Garmin", 5: "Notes"}
+    choices = {0: "Exit", 1: "Geolocation", 2: "Weather", 3: "Clock", 4: "Garmin", 5: "Notes"}
     total_amount = len(choices)
     while True:
         print(f"Choose from 1-{total_amount}")
@@ -23,6 +23,8 @@ def get_user_choice():
             user_choice = int(input(""))
             if user_choice in choices:
                 print(f"{choices[user_choice]}:")
+                if user_choice == 0:
+                    return()
                 if user_choice == 1:
                     get_geolocation()
                 elif user_choice == 2:
