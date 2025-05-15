@@ -2,6 +2,7 @@ import json
 import datetime
 from pathlib import Path
 from utils.print_helpers import print_separator
+from utils.data_operations import load_json_data, save_json_data
 
 def get_notes():
     choices = {0: "Exit", 1: "Create", 2: "Read", 3: "Update", 4: "Delete"}
@@ -36,10 +37,7 @@ def get_notes():
 
 
 def create_notes():
-    data_folder = Path("user_data")
-    notes_file = data_folder / "user_notes.json"
-    with open(notes_file, "r") as f:
-        notes_data = json.load(f)
+    notes_data = load_json_data("user_notes.json")
     new_note = input("Note name: ")
     new_note_tag = input("Tag (You can skip it): ")
     new_note_create_date = datetime.datetime.now()
@@ -52,15 +50,11 @@ def create_notes():
     }
     notes_data.append(new_note)
 
-    with open(notes_file, "w") as f:
-        json.dump(notes_data, f, indent=4)
+    save_json_data("user_notes.json", notes_data)
 
 
 def read_notes():
-    data_folder = Path("user_data")
-    notes_file = data_folder / "user_notes.json"
-    with open(notes_file, "r") as f:
-        notes_data = json.load(f)
+    notes_data = load_json_data("user_notes.json")
 
     if not notes_data:
         print("No notes found")
@@ -79,10 +73,7 @@ def read_notes():
 
 
 def update_notes():
-    data_folder = Path("user_data")
-    notes_file = data_folder / "user_notes.json"
-    with open(notes_file, "r") as f:
-        notes_data = json.load(f)
+    notes_data = load_json_data("user_notes.json")
 
     if not notes_data:
         print("No notes to update!")
@@ -120,8 +111,7 @@ def update_notes():
             )
 
             print(f"\nUpdated note: {new_name}")
-            with open(notes_file, "w") as f:
-                json.dump(notes_data, f, indent=4)
+            save_json_data("user_notes.json", notes_data)
         else:
             print("Invalid note number!")
     except ValueError:
@@ -129,10 +119,7 @@ def update_notes():
 
 
 def delete_notes():
-    data_folder = Path("user_data")
-    notes_file = data_folder / "user_notes.json"
-    with open(notes_file, "r") as f:
-        notes_data = json.load(f)
+    notes_data = load_json_data("user_notes.json")
 
     if not notes_data:
         print("No notes to delete!")
@@ -153,8 +140,7 @@ def delete_notes():
         if 0 <= note_to_delete < len(notes_data):
             deleted_note = notes_data.pop(note_to_delete)
             print(f"\nDeleted note: {deleted_note['name']}")
-            with open(notes_file, "w") as f:
-                json.dump(notes_data, f, indent=4)
+            save_json_data("user_notes.json", notes_data)
         else:
             print("Invalid note number!")
     except ValueError:
