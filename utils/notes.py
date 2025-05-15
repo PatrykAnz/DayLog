@@ -36,7 +36,6 @@ def get_notes():
 
 
 def create_notes():
-    print("create notes")
     data_folder = Path("user_data")
     notes_file = data_folder / "user_notes.json"
     with open(notes_file, "r") as f:
