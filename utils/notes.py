@@ -1,11 +1,16 @@
-import json
 import datetime
-from pathlib import Path
 from utils.print_helpers import print_separator
 from utils.data_operations import load_json_data, save_json_data
 
+USER_NOTES_FILE = "user_notes.json"
 def get_notes():
-    choices = {0: "Exit", 1: "Create", 2: "Read", 3: "Update", 4: "Delete"}
+    choices = {
+        1: "Create", 
+        2: "Read", 
+        3: "Update", 
+        4: "Delete", 
+        0: "Exit"
+    }
     total_amount = len(choices)
     while True:
         print(f"Choose from 0-{total_amount-1}")
@@ -37,7 +42,7 @@ def get_notes():
 
 
 def create_notes():
-    notes_data = load_json_data("user_notes.json")
+    notes_data = load_json_data(USER_NOTES_FILE)
     new_note = input("Note name: ")
     new_note_tag = input("Tag (You can skip it): ")
     new_note_create_date = datetime.datetime.now()
@@ -50,42 +55,42 @@ def create_notes():
     }
     notes_data.append(new_note)
 
-    save_json_data("user_notes.json", notes_data)
+    save_json_data(USER_NOTES_FILE, notes_data)
 
 
 def read_notes():
-    notes_data = load_json_data("user_notes.json")
+    notes_data = load_json_data(USER_NOTES_FILE)
 
     if not notes_data:
         print("No notes found")
         return
 
     print("\nNotes:")
-    print("-" * 50)
+    print_separator()
     for i, note in enumerate(notes_data, 1):
         print(f"\nNote #{i}")
         print(f"Name: {note['name']}")
         print(f"Tag: {note['tag']}")
         print(f"Created: {note['created_at']}")
         print(f"Last Edited: {note['last_edited']}")
-        print("-" * 50)
+        print_separator()
     input(f"Press Enter to return")
 
 
 def update_notes():
-    notes_data = load_json_data("user_notes.json")
+    notes_data = load_json_data(USER_NOTES_FILE)
 
     if not notes_data:
         print("No notes to update!")
         return
 
     print("\nWhich note would you like to update?")
-    print("-" * 50)
+    print_separator()
     for i, note in enumerate(notes_data, 1):
         print(f"\nNote #{i}")
         print(f"Name: {note['name']}")
         print(f"Tag: {note['tag']}")
-        print("-" * 50)
+        print_separator()
 
     try:
         note_to_update = int(input("Enter note number to update (0 to cancel): ")) - 1
@@ -111,7 +116,7 @@ def update_notes():
             )
 
             print(f"\nUpdated note: {new_name}")
-            save_json_data("user_notes.json", notes_data)
+            save_json_data(USER_NOTES_FILE, notes_data)
         else:
             print("Invalid note number!")
     except ValueError:
@@ -119,19 +124,19 @@ def update_notes():
 
 
 def delete_notes():
-    notes_data = load_json_data("user_notes.json")
+    notes_data = load_json_data(USER_NOTES_FILE)
 
     if not notes_data:
         print("No notes to delete!")
         return
 
     print("\nWhich note would you like to delete?")
-    print("-" * 50)
+    print_separator()
     for i, note in enumerate(notes_data, 1):
         print(f"\nNote #{i}")
         print(f"Name: {note['name']}")
         print(f"Tag: {note['tag']}")
-        print("-" * 50)
+        print_separator()
 
     try:
         note_to_delete = int(input("Enter note number to delete (0 to cancel): ")) - 1
@@ -140,7 +145,7 @@ def delete_notes():
         if 0 <= note_to_delete < len(notes_data):
             deleted_note = notes_data.pop(note_to_delete)
             print(f"\nDeleted note: {deleted_note['name']}")
-            save_json_data("user_notes.json", notes_data)
+            save_json_data(USER_NOTES_FILE, notes_data)
         else:
             print("Invalid note number!")
     except ValueError:
