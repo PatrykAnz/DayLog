@@ -43,12 +43,12 @@ def get_notes():
 
 def create_notes():
     notes_data = load_json_data(USER_NOTES_FILE)
-    new_note = input("Note name: ")
+    note_name = input("Note name: ")
     new_note_tag = input("Tag (You can skip it): ")
     new_note_create_date = datetime.datetime.now()
 
     new_note = {
-        "name": new_note,
+        "name": note_name,
         "tag": new_note_tag,
         "created_at": new_note_create_date.strftime("%Y-%m-%d %H:%M"),
         "last_edited": new_note_create_date.strftime("%Y-%m-%d %H:%M"),

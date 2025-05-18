@@ -1,5 +1,6 @@
 import webbrowser
 import requests
+import time
 from urllib.parse import urlencode, urlparse, parse_qs
 from utils.data_operations import (
     load_json_data,
@@ -56,6 +57,7 @@ def exchange_code_for_token(code, creds):
         data = response.json()
         if data.get("status") == 0:
             token_data = data.get("body", {})
+            token_data["created"] = int(datetime.datetime.now().timestamp())
             save_json_data(TOKEN_FILE, token_data)
             return token_data
 
@@ -84,6 +86,7 @@ def refresh_token(refresh_token, creds):
         data = response.json()
         if data.get("status") == 0:
             token_data = data.get("body", {})
+            token_data["created"] = int(datetime.datetime.now().timestamp())
             save_json_data(TOKEN_FILE, token_data)
             return token_data
 
