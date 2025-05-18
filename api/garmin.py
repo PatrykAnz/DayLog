@@ -3,19 +3,16 @@ import json
 from garminconnect import Garmin
 from pathlib import Path
 from dotenv import load_dotenv
-from utils.user_data_operations import check_and_create_user_data
+from utils.data_operations import load_json_data, save_json_data
 from datetime import datetime
 
 load_dotenv()
 
-data_file = Path("user_data") / "user_data.json"
 email = os.getenv("GARMIN_EMAIL")
 password = os.getenv("GARMIN_PASSWORD")
 
 
 def get_garmin():
-    check_and_create_user_data()
-    
     total_steps = 0
     total_sleep = 0
 
@@ -25,13 +22,15 @@ def get_garmin():
         api.login()
 
         today = datetime.now().strftime("%Y-%m-%d")
+        user_data = load_json_data("user_data.json")
 
-        with open(data_file, "r") as f:
-            user_data = json.load(f)
+        steps_data = api.get_steps_data(today)
+
+        sleep_data_raw = api.get_sleep_data(today)
 
         user_data["Garmin"] = {
-            "steps": api.get_steps_data(today),
-            "sleep": api.get_sleep_data(today),
+            "steps": steps_data,
+            "sleep": sleep_data_raw,
         }
 
         for steps in user_data["Garmin"]["steps"]:
@@ -48,11 +47,13 @@ def get_garmin():
         aggregated_data = {
             "steps": total_steps,
             "sleep": total_sleep,
-            "awake": total_awake
+            "awake": total_awake,
         }
+        print(f"Total Steps: {total_steps}")
+        print(f"Total Sleep: {total_sleep} seconds ({total_sleep/3600:.2f} hours)")
+        print(f"Total Awake: {total_awake} seconds ({total_awake/3600:.2f} hours)")
         user_data["Garmin"] = aggregated_data
-        with open(data_file, "w") as f:
-            json.dump(user_data, f, indent=4)
+        save_json_data("user_data.json", user_data)
 
     except Exception as e:
         print(f"Error getting Garmin data: {e}")

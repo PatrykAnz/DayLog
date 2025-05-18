@@ -1,17 +1,12 @@
 import datetime
-from utils.user_data_operations import check_and_create_user_data
+from utils.data_operations import load_json_data, save_json_data
 import json
-from pathlib import Path
 
 
 def get_clock():
-    check_and_create_user_data()
-    data_folder = Path("user_data")
-    data_file = data_folder / "user_data.json"
     current_time = datetime.datetime.now()
-
-    with open(data_file, "r") as f:
-        user_data = json.load(f)
+    user_data = load_json_data("user_data.json")
+    
     user_data["Clock"] = {
         "year": current_time.year,
         "month": current_time.month,
@@ -20,5 +15,4 @@ def get_clock():
         "minute": current_time.minute,
     }
     print(json.dumps(user_data))
-    with open(data_file, "w") as f:
-        json.dump(user_data, f, indent=4)
+    save_json_data("user_data.json", user_data)
