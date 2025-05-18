@@ -25,7 +25,6 @@ def load_json_data(filename):
         return json.load(f)
 
 def save_json_data(filename, data):
-    """Save JSON data to a file in the data folder"""
     ensure_data_folder()
     file_path = get_file_path(filename)
 
