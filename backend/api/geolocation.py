@@ -1,7 +1,7 @@
 import geocoder
 import json
 from pathlib import Path
-from utils.user_data_operations import check_and_create_user_data
+from utils.data_operations import ensure_data_folder, load_json_data, save_json_data
 
 choices = {
     1: "Provide the name of the city",
@@ -10,20 +10,13 @@ choices = {
 
 
 def get_geolocation():
-    check_and_create_user_data()
-    data_folder = Path("user_data")
-    data_file = data_folder / "user_data.json"
+    ensure_data_folder()
+    user_data = load_json_data("user_data.json")
 
     print("Choose if you want to get it from city name or IP")
     for key, value in choices.items():
         print(f"{key}: {value}")
     user_choice = int(input(""))
-
-    try:
-        with open(data_file, "r") as f:
-            user_data = json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        user_data = {}
 
     if user_choice == 1:
         city_name = input("Provide the name of the city: ")
@@ -38,9 +31,8 @@ def get_geolocation():
                 "address": g.address,
             }
 
-            with open(data_file, "w") as f:
-                json.dump(user_data, f, indent=4)
-                print(f"Saved location data to {data_file}")
+            save_json_data("user_data.json", user_data)
+            print(f"Saved location data to user_data.json")
             return g.latlng
         else:
             print("Could not find coordinates for that city.")
@@ -57,9 +49,8 @@ def get_geolocation():
                 "address": g.address,
             }
 
-            with open(data_file, "w") as f:
-                json.dump(user_data, f, indent=4)
-                print(f"Saved location data to {data_file}")
+            save_json_data("user_data.json", user_data)
+            print(f"Saved location data to user_data.json")
             return g.latlng
         else:
             print("Could not determine your location based on IP.")

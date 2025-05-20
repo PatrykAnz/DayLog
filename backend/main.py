@@ -8,7 +8,7 @@ from utils.clock import get_clock
 from utils.notes import get_notes
 from utils.print_helpers import print_separator, cls
 from utils.tasks import get_tasks
-from utils.calendar import get_calendar
+from utils.event_calendar import get_calendar
 
 data_folder = Path("user_data")
 data_file = data_folder / "user_data.json"
