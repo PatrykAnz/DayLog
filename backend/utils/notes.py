@@ -1,6 +1,7 @@
 import datetime
 from utils.print_helpers import print_separator
 from utils.data_operations import load_json_data, save_json_data
+from utils.logging_config import logger
 
 USER_NOTES_FILE = "user_notes.json"
 def get_notes():
@@ -13,32 +14,33 @@ def get_notes():
     }
     total_amount = len(choices)
     while True:
-        print(f"Choose from 0-{total_amount-1}")
+        logger.info(f"Choose from 0-{total_amount-1}")
         for key, value in choices.items():
-            print(f"{key}. {value}")
+            logger.info(f"{key}. {value}")
         try:
             user_choice = int(input(""))
             if user_choice in choices:
                 if user_choice == 0:
-                    return
-                print(f"{choices[user_choice]}:")
+                    return None
+                logger.info(f"{choices[user_choice]}:")
                 if user_choice == 1:
-                    create_notes()
+                    return create_notes()
                 elif user_choice == 2:
-                    read_notes()
+                    return read_notes()
                 elif user_choice == 3:
-                    update_notes()
+                    return update_notes()
                 elif user_choice == 4:
-                    delete_notes()
+                    return delete_notes()
             else:
                 print_separator()
-                print("Invalid choice. Enter a number from the list.")
+                logger.warning("Invalid choice. Enter a number from the list.")
                 print_separator()
         except ValueError as e:
             print_separator()
-            print("An error has occurred. Make sure you entered a number")
-            print(f"\nError info: \n{e}")
+            logger.error("An error has occurred. Make sure you entered a number")
+            logger.error(f"\nError info: \n{e}")
             print_separator()
+            return None
 
 
 def create_notes():
@@ -62,17 +64,17 @@ def read_notes():
     notes_data = load_json_data(USER_NOTES_FILE)
 
     if not notes_data:
-        print("No notes found")
+        logger.warning("No notes found")
         return
 
-    print("\nNotes:")
+    logger.info("\nNotes:")
     print_separator()
     for i, note in enumerate(notes_data, 1):
-        print(f"\nNote #{i}")
-        print(f"Name: {note['name']}")
-        print(f"Tag: {note['tag']}")
-        print(f"Created: {note['created_at']}")
-        print(f"Last Edited: {note['last_edited']}")
+        logger.info(f"\nNote #{i}")
+        logger.info(f"Name: {note['name']}")
+        logger.info(f"Tag: {note['tag']}")
+        logger.info(f"Created: {note['created_at']}")
+        logger.info(f"Last Edited: {note['last_edited']}")
         print_separator()
     input(f"Press Enter to return")
 
@@ -81,15 +83,15 @@ def update_notes():
     notes_data = load_json_data(USER_NOTES_FILE)
 
     if not notes_data:
-        print("No notes to update!")
+        logger.warning("No notes to update!")
         return
 
-    print("\nWhich note would you like to update?")
+    logger.info("\nWhich note would you like to update?")
     print_separator()
     for i, note in enumerate(notes_data, 1):
-        print(f"\nNote #{i}")
-        print(f"Name: {note['name']}")
-        print(f"Tag: {note['tag']}")
+        logger.info(f"\nNote #{i}")
+        logger.info(f"Name: {note['name']}")
+        logger.info(f"Tag: {note['tag']}")
         print_separator()
 
     try:
@@ -97,7 +99,7 @@ def update_notes():
         if note_to_update == -1:
             return
         if 0 <= note_to_update < len(notes_data):
-            print("\nEnter new information (press Enter to keep current value):")
+            logger.info("\nEnter new information (press Enter to keep current value):")
             new_name = (
                 input(f"New name [{notes_data[note_to_update]['name']}]: ")
                 or notes_data[note_to_update]["name"]
@@ -115,27 +117,27 @@ def update_notes():
                 }
             )
 
-            print(f"\nUpdated note: {new_name}")
+            logger.info(f"\nUpdated note: {new_name}")
             save_json_data(USER_NOTES_FILE, notes_data)
         else:
-            print("Invalid note number!")
+            logger.warning("Invalid note number!")
     except ValueError:
-        print("Please enter a valid number!")
+        logger.error("Please enter a valid number!")
 
 
 def delete_notes():
     notes_data = load_json_data(USER_NOTES_FILE)
 
     if not notes_data:
-        print("No notes to delete!")
+        logger.warning("No notes to delete!")
         return
 
-    print("\nWhich note would you like to delete?")
+    logger.info("\nWhich note would you like to delete?")
     print_separator()
     for i, note in enumerate(notes_data, 1):
-        print(f"\nNote #{i}")
-        print(f"Name: {note['name']}")
-        print(f"Tag: {note['tag']}")
+        logger.info(f"\nNote #{i}")
+        logger.info(f"Name: {note['name']}")
+        logger.info(f"Tag: {note['tag']}")
         print_separator()
 
     try:
@@ -144,9 +146,9 @@ def delete_notes():
             return
         if 0 <= note_to_delete < len(notes_data):
             deleted_note = notes_data.pop(note_to_delete)
-            print(f"\nDeleted note: {deleted_note['name']}")
+            logger.info(f"\nDeleted note: {deleted_note['name']}")
             save_json_data(USER_NOTES_FILE, notes_data)
         else:
-            print("Invalid note number!")
+            logger.warning("Invalid note number!")
     except ValueError:
-        print("Please enter a valid number!")
+        logger.error("Please enter a valid number!")
