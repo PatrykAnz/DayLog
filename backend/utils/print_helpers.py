@@ -1,7 +1,8 @@
 from os import system, name
+from utils.logging_config import logger
 
 def print_separator():
-     print("-" * 50)
+     logger.info("-" * 50)
 
 def cls():
     system("cls" if name == "nt" else "clear")
