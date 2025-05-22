@@ -1,13 +1,11 @@
-import webbrowser
-import requests
-import time
-from urllib.parse import urlencode, urlparse, parse_qs
-from utils.data_operations import (
-    load_json_data,
-    save_json_data,
-)
 import datetime
-from utils.logging_config import logger
+import time
+import webbrowser
+from urllib.parse import parse_qs, urlencode, urlparse
+
+import requests
+from common.data_operations import load_json_data, save_json_data
+from common.logging_config import logger
 
 TOKEN_FILE = "withings_token.json"
 CREDS_FILE = "withings_creds.json"

@@ -1,9 +1,10 @@
 import json
 from pathlib import Path
 
-from utils.logging_config import logger
+from common.logging_config import logger
 
 DATA_FOLDER = Path("user_data")
+
 
 def ensure_data_folder():
     if not DATA_FOLDER.exists():
@@ -16,7 +17,6 @@ def get_file_path(filename):
 
 
 def check_and_create_user_data():
-    """Legacy function maintained for compatibility"""
     ensure_data_folder()
     file_path = get_file_path("user_data.json")
     if not file_path.exists():

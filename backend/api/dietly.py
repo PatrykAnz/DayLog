@@ -1,5 +1,4 @@
 import os
-import re
 import time
 
 from dotenv import load_dotenv
@@ -7,10 +6,12 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-from utils.logging_config import logger
 from webdriver_manager.chrome import ChromeDriverManager
+
+from common.logging_config import logger
 
 load_dotenv()
 
@@ -21,7 +22,9 @@ DIETLY_PASSWORD = os.getenv("DIETLY_PASSWORD")
 
 def get_dietly():
     chrome_options = Options()
-    chrome_options.add_experimental_option("detach", True)
+    chrome_options.add_experimental_option("detach", False)
+    # chrome_options.add_argument("--headless=new")
+    chrome_options.add_argument("--start-maximized")
 
     driver = webdriver.Chrome(
         service=Service(ChromeDriverManager().install()), options=chrome_options
@@ -51,7 +54,17 @@ def get_dietly():
     )
     confirm_login.click()
 
-    # Extract meal data
+    time.sleep(2)
+
+    try:
+        daily_summary = wait.until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, ".body-m.color-gray-700"))
+        )
+        logger.info("\nDaily Summary:")
+        logger.info(daily_summary.text)
+    except Exception as e:
+        logger.error(f"Error getting daily summary: {e}")
+
     meal_elements = wait.until(
         EC.presence_of_all_elements_located(
             (
@@ -61,30 +74,51 @@ def get_dietly():
         )
     )
 
+    meals_data = []
     for meal in meal_elements:
         try:
             meal_type = meal.find_element(By.CSS_SELECTOR, ".label-s").text.strip()
             meal_name = meal.find_element(
                 By.CSS_SELECTOR, ".body-m.color-gray-900 span"
             ).text.strip()
-            macros = meal.find_elements(By.CSS_SELECTOR, ".body-m.color-gray-400 div")
 
-            kcal = macros[0].text.strip().replace("kcal", "")
-            prot = macros[2].text.strip().replace("B: ", "").replace("g", "")
-            carbs = macros[4].text.strip().replace("W: ", "").replace("g", "")
-            fat = macros[6].text.strip().replace("T: ", "").replace("g", "")
+            # Get all macro elements
+            macros_div = meal.find_element(
+                By.CSS_SELECTOR,
+                ".display-flex.flex-wrap.align-items-center.body-m.color-gray-400",
+            )
+            macros_text = macros_div.text.strip()
 
-            return {
+            # Parse macros text
+            macro_parts = macros_text.split("•")
+            kcal = macro_parts[0].strip().replace("kcal", "").strip()
+            prot = macro_parts[1].strip().replace("B:", "").replace("g", "").strip()
+            carbs = macro_parts[2].strip().replace("W:", "").replace("g", "").strip()
+            fat = macro_parts[3].strip().replace("T:", "").replace("g", "").strip()
+
+            meal_data = {
                 "Meal": meal_type,
+                "Tag": "DIETA",
                 "Name": meal_name,
                 "Kcal": kcal,
-                "Prot": prot,
+                "Protein": prot,
                 "Carbs": carbs,
                 "Fat": fat,
             }
+            meals_data.append(meal_data)
+
+            logger.info(f"\n{meal_type}:")
+            logger.info(f"Name: {meal_name}")
+            logger.info(f"Calories: {kcal}kcal")
+            logger.info(f"Protein: {prot}g")
+            logger.info(f"Carbs: {carbs}g")
+            logger.info(f"Fat: {fat}g")
 
         except Exception as e:
             logger.error(f"Error parsing meal: {e}")
+
+    driver.quit()
+    return meals_data
 
 
 if __name__ == "__main__":

@@ -1,8 +1,8 @@
 import geocoder
 import json
 from pathlib import Path
-from utils.data_operations import ensure_data_folder, load_json_data, save_json_data
-from utils.logging_config import logger
+from common.data_operations import ensure_data_folder, load_json_data, save_json_data
+from common.logging_config import logger
 
 def get_geolocation(city_name: str = None):
     ensure_data_folder()
