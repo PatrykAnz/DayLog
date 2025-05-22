@@ -5,6 +5,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from utils.data_operations import load_json_data, save_json_data
 from datetime import datetime
+from utils.logging_config import logger
 
 load_dotenv()
 
@@ -12,9 +13,10 @@ email = os.getenv("GARMIN_EMAIL")
 password = os.getenv("GARMIN_PASSWORD")
 
 
-def get_garmin():
+def get_garmin() -> dict:
     total_steps = 0
     total_sleep = 0
+    total_awake = 0
 
     api = Garmin(email, password)
 
@@ -25,7 +27,6 @@ def get_garmin():
         user_data = load_json_data("user_data.json")
 
         steps_data = api.get_steps_data(today)
-
         sleep_data_raw = api.get_sleep_data(today)
 
         user_data["Garmin"] = {
@@ -33,27 +34,38 @@ def get_garmin():
             "sleep": sleep_data_raw,
         }
 
-        for steps in user_data["Garmin"]["steps"]:
-            total_steps += steps["steps"]
+        # Calculate total steps
+        if steps_data:
+            for steps in steps_data:
+                if steps and "steps" in steps:
+                    total_steps += steps["steps"] or 0
 
-        sleep_data = user_data["Garmin"]["sleep"]["dailySleepDTO"]
-        total_sleep = (
-            sleep_data["deepSleepSeconds"]
-            + sleep_data["lightSleepSeconds"]
-            + sleep_data["remSleepSeconds"]
-        )
-        total_awake = sleep_data["awakeSleepSeconds"]
+        # Calculate sleep totals
+        if sleep_data_raw and "dailySleepDTO" in sleep_data_raw:
+            sleep_data = sleep_data_raw["dailySleepDTO"]
+            total_sleep = (
+                (sleep_data.get("deepSleepSeconds") or 0) +
+                (sleep_data.get("lightSleepSeconds") or 0) +
+                (sleep_data.get("remSleepSeconds") or 0)
+            )
+            total_awake = sleep_data.get("awakeSleepSeconds") or 0
 
         aggregated_data = {
             "steps": total_steps,
             "sleep": total_sleep,
             "awake": total_awake,
         }
-        print(f"Total Steps: {total_steps}")
-        print(f"Total Sleep: {total_sleep} seconds ({total_sleep/3600:.2f} hours)")
-        print(f"Total Awake: {total_awake} seconds ({total_awake/3600:.2f} hours)")
+        
+        logger.info(f"Total Steps: {total_steps}")
+        logger.info(f"Total Sleep: {total_sleep} seconds ({total_sleep/3600:.2f} hours)")
+        logger.info(f"Total Awake: {total_awake} seconds ({total_awake/3600:.2f} hours)")
+        
         user_data["Garmin"] = aggregated_data
         save_json_data("user_data.json", user_data)
+        
+        return aggregated_data
 
     except Exception as e:
-        print(f"Error getting Garmin data: {e}")
+        logger.error(f"Error getting Garmin data: {e}")
+        return {"error": str(e)}
+
