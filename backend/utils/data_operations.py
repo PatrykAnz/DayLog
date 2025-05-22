@@ -38,7 +38,7 @@ def load_json_data(filename):
         content = f.read()
         if not content.strip():  # Check if file is empty
             logger.info(f"Skipping empty file: {filename}")
-            return None
+            return {} if filename == "user_data.json" else []
         return json.loads(content)
 
 
