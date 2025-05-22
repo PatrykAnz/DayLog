@@ -1,6 +1,7 @@
 import datetime
 from utils.data_operations import load_json_data, save_json_data
 from utils.print_helpers import print_separator, cls
+from utils.logging_config import logger
 
 USER_CALENDAR_FILE = "user_calendar.json"
 
@@ -14,15 +15,15 @@ def get_calendar():
     }
     total_amount = len(choices)
     while True:
-        print(f"Choose from 0-{total_amount-1}")
+        logger.info(f"Choose from 0-{total_amount-1}")
         for key, value in choices.items():
-            print(f"{key}. {value}")
+            logger.info(f"{key}. {value}")
         try:
             user_choice = int(input(""))
             if user_choice in choices:
                 if user_choice == 0:
                     return
-                print(f"{choices[user_choice]}:")
+                logger.info(f"{choices[user_choice]}:")
                 if user_choice == 1:
                     create_calendar_event()
                 elif user_choice == 2:
@@ -33,12 +34,12 @@ def get_calendar():
                     delete_calendar_event() 
             else:
                 print_separator()
-                print("Invalid choice. Enter a number from the list.")
+                logger.warning("Invalid choice. Enter a number from the list.")
                 print_separator()
         except ValueError as e:
             print_separator()
-            print("An error has occurred. Make sure you entered a number")
-            print(f"\nError info: \n{e}")
+            logger.error("An error has occurred. Make sure you entered a number")
+            logger.error(f"\nError info: \n{e}")
             print_separator() 
 
 def create_calendar_event():
@@ -53,7 +54,7 @@ def create_calendar_event():
     
     current_datetime = datetime.datetime.now()
     
-    print("\nEvent date (press Enter to use today's date):")
+    logger.info("\nEvent date (press Enter to use today's date):")
     
     
     year_input = input(f"Year (YYYY) [{current_datetime.year}]: ")
@@ -67,7 +68,7 @@ def create_calendar_event():
     day_input = input(f"Day (1-31) [{current_datetime.day}]: ")
     day = current_datetime.day if day_input == '' else int(day_input)
     
-    print("\nEvent time (press Enter to use current time):")
+    logger.info("\nEvent time (press Enter to use current time):")
     
     
     hour_input = input(f"Hour (0-23) [{current_datetime.hour}]: ")
@@ -102,20 +103,20 @@ def read_calendar_events():
     calendar_data = load_json_data(USER_CALENDAR_FILE)
     
     if not calendar_data:
-        print("No events found")
+        logger.warning("No events found")
         return
     
-    print("\nEvents:")
+    logger.info("\nEvents:")
     print_separator()
     for i, event in enumerate(calendar_data, 1):
-        print(f"\nEvent #{i}")
-        print(f"Name: {event['name']}")
-        print(f"Date: {event.get('date', 'Not specified')}")
-        print(f"Time: {event.get('time', 'Not specified')}")
-        print(f"Tag: {event['tag']}")
-        print(f"Description: {event.get('description', 'None')}")
-        print(f"Created: {event['created_at']}")
-        print(f"Last Edited: {event['last_edited']}")
+        logger.info(f"\nEvent #{i}")
+        logger.info(f"Name: {event['name']}")
+        logger.info(f"Date: {event.get('date', 'Not specified')}")
+        logger.info(f"Time: {event.get('time', 'Not specified')}")
+        logger.info(f"Tag: {event['tag']}")
+        logger.info(f"Description: {event.get('description', 'None')}")
+        logger.info(f"Created: {event['created_at']}")
+        logger.info(f"Last Edited: {event['last_edited']}")
         print_separator()
     input(f"Press Enter to return")
 
@@ -123,16 +124,16 @@ def delete_calendar_event():
     calendar_data = load_json_data(USER_CALENDAR_FILE)
 
     if not calendar_data:
-        print("No events to delete!")
+        logger.warning("No events to delete!")
         return
     
-    print("\nWhich event would you like to delete?")
+    logger.info("\nWhich event would you like to delete?")
     print_separator()
     for i, event in enumerate(calendar_data, 1):
-        print(f"\nEvent #{i}")
-        print(f"Name: {event['name']}")
-        print(f"Date: {event.get('date', 'Not specified')} {event.get('time', '')}")
-        print(f"Tag: {event['tag']}")
+        logger.info(f"\nEvent #{i}")
+        logger.info(f"Name: {event['name']}")
+        logger.info(f"Date: {event.get('date', 'Not specified')} {event.get('time', '')}")
+        logger.info(f"Tag: {event['tag']}")
         print_separator()
     
     try:
@@ -143,28 +144,28 @@ def delete_calendar_event():
         
         if 0 <= event_to_delete < len(calendar_data):
             deleted_event = calendar_data.pop(event_to_delete)
-            print(f"\nDeleted event: {deleted_event['name']}")
+            logger.info(f"\nDeleted event: {deleted_event['name']}")
             save_json_data(USER_CALENDAR_FILE, calendar_data)
         else:
-            print("Invalid event number!")
+            logger.warning("Invalid event number!")
     
     except ValueError:
-        print("Please enter a valid number!")
+        logger.error("Please enter a valid number!")
 
 def update_calendar_event():
     calendar_data = load_json_data(USER_CALENDAR_FILE)
 
     if not calendar_data:
-        print("No events to update!")
+        logger.warning("No events to update!")
         return
     
-    print("\nWhich event would you like to update?")
+    logger.info("\nWhich event would you like to update?")
     print_separator()
     for i, event in enumerate(calendar_data, 1):
-        print(f"\nEvent #{i}")
-        print(f"Name: {event['name']}")
-        print(f"Date: {event.get('date', 'Not specified')} {event.get('time', '')}")
-        print(f"Tag: {event['tag']}")
+        logger.info(f"\nEvent #{i}")
+        logger.info(f"Name: {event['name']}")
+        logger.info(f"Date: {event.get('date', 'Not specified')} {event.get('time', '')}")
+        logger.info(f"Tag: {event['tag']}")
         print_separator()
     
     try:
@@ -176,7 +177,7 @@ def update_calendar_event():
         if 0 <= event_to_update < len(calendar_data):
             event = calendar_data[event_to_update]
             
-            print("\nEnter new information (press Enter to keep current value):")
+            logger.info("\nEnter new information (press Enter to keep current value):")
             
             new_name = input(f"New name [{event['name']}]: ") or event['name']
             
@@ -200,13 +201,13 @@ def update_calendar_event():
                 "last_edited": datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
             })
             
-            print(f"\nUpdated event: {new_name}")
+            logger.info(f"\nUpdated event: {new_name}")
             save_json_data(USER_CALENDAR_FILE, calendar_data)
         else:
-            print("Invalid event number!")
+            logger.warning("Invalid event number!")
     
     except ValueError:
-        print("Please enter a valid number!")
+        logger.error("Please enter a valid number!")
 
 def display_upcoming_events(days=7):
     calendar_data = load_json_data(USER_CALENDAR_FILE)
