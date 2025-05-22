@@ -15,6 +15,16 @@ def get_file_path(filename):
     return DATA_FOLDER / filename
 
 
+def check_and_create_user_data():
+    """Legacy function maintained for compatibility"""
+    ensure_data_folder()
+    file_path = get_file_path("user_data.json")
+    if not file_path.exists():
+        with open(file_path, "w") as f:
+            json.dump({}, f)
+        logger.info("Created 'user_data.json' file.")
+
+
 def load_json_data(filename):
     ensure_data_folder()
     file_path = get_file_path(filename)
