@@ -2,8 +2,8 @@ import requests
 from api.geolocation import get_geolocation
 from pathlib import Path
 import json
-from utils.data_operations import check_and_create_user_data
-from utils.logging_config import logger
+from common.data_operations import check_and_create_user_data
+from common.logging_config import logger
 
 
 def get_weather():

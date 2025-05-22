@@ -3,9 +3,9 @@ import json
 from garminconnect import Garmin
 from pathlib import Path
 from dotenv import load_dotenv
-from utils.data_operations import load_json_data, save_json_data
+from common.data_operations import load_json_data, save_json_data
 from datetime import datetime
-from utils.logging_config import logger
+from common.logging_config import logger
 
 load_dotenv()
 

@@ -1,5 +1,5 @@
 import datetime
-from utils.logging_config import logger
+from common.logging_config import logger
 
 
 def get_clock():
