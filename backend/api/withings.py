@@ -7,6 +7,7 @@ from utils.data_operations import (
     save_json_data,
 )
 import datetime
+from utils.logging_config import logger
 
 TOKEN_FILE = "withings_token.json"
 CREDS_FILE = "withings_creds.json"
@@ -61,7 +62,7 @@ def exchange_code_for_token(code, creds):
             save_json_data(TOKEN_FILE, token_data)
             return token_data
 
-    print(f"Error getting token: {response.text}")
+    logger.error(f"Error getting token: {response.text}")
     return None
 
 
@@ -90,7 +91,7 @@ def refresh_token(refresh_token, creds):
             save_json_data(TOKEN_FILE, token_data)
             return token_data
 
-    print("Error refreshing token")
+    logger.error("Error refreshing token")
     return None
 
 
@@ -122,22 +123,22 @@ def get_weight_data(token_data):
         if data.get("status") == 0:
             return data.get("body", {})
 
-    print("Error getting weight data")
+    logger.error("Error getting weight data")
     return None
 
 
 def get_withings():
     token_data = load_json_data(TOKEN_FILE)
     if token_data and "access_token" in token_data:
-        print("Already authenticated")
+        logger.info("Already authenticated")
 
         weight_data = get_weight_data(token_data)
         if weight_data:
             latest_weight = process_weight_data(weight_data)
             if latest_weight:
-
                 save_weight_to_user_data(latest_weight)
-        return token_data
+                return latest_weight
+        return None
 
     creds = get_credentials()
 
@@ -161,20 +162,20 @@ def get_withings():
         token_data = exchange_code_for_token(auth_code, creds)
 
         if token_data:
-            print("Authsuccess")
+            logger.info("Authsuccess")
             return token_data
         else:
-            print("Access token error")
+            logger.error("Access token error")
             save_json_data(CREDS_FILE, {})
             return None
     else:
-        print("Something is wrong with the URL ")
+        logger.error("Something is wrong with the URL ")
         return None
 
 
 def process_weight_data(weight_data):
     if "measuregrps" not in weight_data:
-        print("No weight measurements found")
+        logger.warning("No weight measurements found")
         return None
 
     measures = weight_data["measuregrps"]
@@ -218,7 +219,7 @@ def save_weight_to_user_data(weight_data):
     user_data["Withings"]["date"] = weight_data["date"]
 
     save_json_data(USER_DATA_FILE, user_data)
-    print(f"Saved today's weight: {weight_data['weight']} {weight_data['units']}")
+    logger.info(f"Saved today's weight: {weight_data['weight']} {weight_data['units']}")
 
 
 if __name__ == "__main__":
