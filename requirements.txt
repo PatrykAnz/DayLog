@@ -1,8 +1,10 @@
-geocoder
-gps3
-garminconnect
-python-dotenv
-selenium
-webdriver_manager
 fastapi
 uvicorn
+python-dotenv
+requests
+garminconnect
+geocoder
+selenium
+webdriver-manager
+python-multipart
+pydantic
