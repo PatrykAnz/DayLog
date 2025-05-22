@@ -1,16 +1,29 @@
 import json
 from pathlib import Path
 
+from utils.logging_config import logger
 
 DATA_FOLDER = Path("user_data")
 
 def ensure_data_folder():
     if not DATA_FOLDER.exists():
         DATA_FOLDER.mkdir()
-        print("Created 'user_data' folder.")
+        logger.info("Created 'user_data' folder.")
+
 
 def get_file_path(filename):
     return DATA_FOLDER / filename
+
+
+def check_and_create_user_data():
+    """Legacy function maintained for compatibility"""
+    ensure_data_folder()
+    file_path = get_file_path("user_data.json")
+    if not file_path.exists():
+        with open(file_path, "w") as f:
+            json.dump({}, f)
+        logger.info("Created 'user_data.json' file.")
+
 
 def load_json_data(filename):
     ensure_data_folder()
@@ -19,10 +32,15 @@ def load_json_data(filename):
     if not file_path.exists():
         with open(file_path, "w") as f:
             json.dump({} if filename == "user_data.json" else [], f)
-        print(f"Created '{filename}' file.")
+        logger.info(f"Created '{filename}' file.")
 
     with open(file_path, "r") as f:
-        return json.load(f)
+        content = f.read()
+        if not content.strip():  # Check if file is empty
+            logger.info(f"Skipping empty file: {filename}")
+            return {} if filename == "user_data.json" else []
+        return json.loads(content)
+
 
 def save_json_data(filename, data):
     ensure_data_folder()
@@ -30,5 +48,4 @@ def save_json_data(filename, data):
 
     with open(file_path, "w") as f:
         json.dump(data, f, indent=4)
-
     return True

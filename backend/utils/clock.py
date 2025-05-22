@@ -1,18 +1,17 @@
 import datetime
-from utils.data_operations import load_json_data, save_json_data
-import json
+from utils.logging_config import logger
 
 
 def get_clock():
     current_time = datetime.datetime.now()
-    user_data = load_json_data("user_data.json")
     
-    user_data["Clock"] = {
+    clock_data = {
         "year": current_time.year,
         "month": current_time.month,
         "day": current_time.day,
         "hour": current_time.hour,
         "minute": current_time.minute,
     }
-    print(json.dumps(user_data))
-    save_json_data("user_data.json", user_data)
+    
+    logger.info(f"Current time: {clock_data}")
+    return clock_data

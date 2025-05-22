@@ -2,7 +2,8 @@ import requests
 from api.geolocation import get_geolocation
 from pathlib import Path
 import json
-from utils.user_data_operations import check_and_create_user_data
+from utils.data_operations import check_and_create_user_data
+from utils.logging_config import logger
 
 
 def get_weather():
@@ -41,8 +42,10 @@ def get_weather():
     with open(data_file, "w") as f:
         json.dump(user_data, f, indent=4)
 
-    print(json.dumps(user_data, indent=4))
-    print(f"Weather data saved to {data_file}")
+    logger.info(json.dumps(user_data, indent=4))
+    logger.info(f"Weather data saved to {data_file}")
+    
+    return user_data["Weather"]
 
 
 if __name__ == "__main__":

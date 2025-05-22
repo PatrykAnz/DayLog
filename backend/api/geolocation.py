@@ -2,28 +2,18 @@ import geocoder
 import json
 from pathlib import Path
 from utils.data_operations import ensure_data_folder, load_json_data, save_json_data
+from utils.logging_config import logger
 
-choices = {
-    1: "Provide the name of the city",
-    2: "Using IP (less accurate)",
-}
-
-
-def get_geolocation():
+def get_geolocation(city_name: str = None):
     ensure_data_folder()
     user_data = load_json_data("user_data.json")
 
-    print("Choose if you want to get it from city name or IP")
-    for key, value in choices.items():
-        print(f"{key}: {value}")
-    user_choice = int(input(""))
-
-    if user_choice == 1:
-        city_name = input("Provide the name of the city: ")
+    if city_name:
+        # Use provided city name
         g = geocoder.arcgis(city_name)
         if g.latlng:
-            print(f"Location set to {g.address}:")
-            print(f"Latitude: {g.latlng[0]}, Longitude: {g.latlng[1]}")
+            logger.info(f"Location set to {g.address}:")
+            logger.info(f"Latitude: {g.latlng[0]}, Longitude: {g.latlng[1]}")
 
             user_data["Geolocation"] = {
                 "latitude": g.latlng[0],
@@ -32,16 +22,17 @@ def get_geolocation():
             }
 
             save_json_data("user_data.json", user_data)
-            print(f"Saved location data to user_data.json")
-            return g.latlng
+            logger.info(f"Saved location data to user_data.json")
+            return user_data["Geolocation"]
         else:
-            print("Could not find coordinates for that city.")
+            logger.warning("Could not find coordinates for that city.")
             return None
-    elif user_choice == 2:
+    else:
+        # Fallback to IP-based location
         g = geocoder.ip("me")
         if g.latlng:
-            print(f"Location set to {g.city}:")
-            print(f"Latitude: {g.latlng[0]}, Longitude: {g.latlng[1]}")
+            logger.info(f"Location set to {g.city}:")
+            logger.info(f"Latitude: {g.latlng[0]}, Longitude: {g.latlng[1]}")
 
             user_data["Geolocation"] = {
                 "latitude": g.latlng[0],
@@ -50,10 +41,10 @@ def get_geolocation():
             }
 
             save_json_data("user_data.json", user_data)
-            print(f"Saved location data to user_data.json")
-            return g.latlng
+            logger.info(f"Saved location data to user_data.json")
+            return user_data["Geolocation"]
         else:
-            print("Could not determine your location based on IP.")
+            logger.warning("Could not determine your location based on IP.")
             return None
 
 
