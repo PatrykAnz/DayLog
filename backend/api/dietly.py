@@ -1,6 +1,7 @@
 import os
 import time
 
+from common.logging_config import logger
 from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -11,8 +12,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 
-from common.logging_config import logger
-
 load_dotenv()
 
 
@@ -22,7 +21,7 @@ DIETLY_PASSWORD = os.getenv("DIETLY_PASSWORD")
 
 def get_dietly():
     chrome_options = Options()
-    chrome_options.add_experimental_option("detach", False)
+    chrome_options.add_experimental_option("detach", True)
     # chrome_options.add_argument("--headless=new")
     chrome_options.add_argument("--start-maximized")
 
