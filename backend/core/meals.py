@@ -106,7 +106,7 @@ def update_meal():
 
             while True:
                 try:
-                    print("1: 100g\n2: Meal")
+                    logger("1: 100g\n2: Meal")
                     new_tag = int(
                         input(f"New tag: [{meal_data[meal_to_update]['Tag']}]: ")
                         or meal_data[meal_to_update]["Tag"]
@@ -120,7 +120,6 @@ def update_meal():
                         break
                     else:
                         logger.warning("Invalid choice. Please try again.")
-
 
                 except ValueError:
                     logger.error("Invalid input. Please enter a number.")
@@ -160,7 +159,34 @@ def update_meal():
 
 
 def delete_meal():
-    print("delete_meal")
+    meal_data = load_json_data(USER_MEALS_FILE)
+    if not meal_data:
+        logger.warning("No meals to delete")
+
+    logger.info("\nWhich meal would you like to delete?")
+    print_separator()
+    for i, meal in enumerate(meal_data, 1):
+        logger.info(f"\n Meal #{i}")
+        logger.info(f"Name: {meal['Name']}")
+        logger.info(f"Tag: {meal['Tag']}")
+        logger.info(f"Kcal: {meal['Kcal']}")
+        logger.info(f"Protein: {meal['Protein']}")
+        logger.info(f"Carbs: {meal['Carbs']}")
+        logger.info(f"Fat: {meal['Fat']}")
+        print_separator()
+
+    try:
+        meal_to_delete = int(input("Enter meal number to delete (0 to cancel): ")) - 1
+        if meal_to_delete == -1:
+            return
+        if 0 <= meal_to_delete < len(meal_data):
+            deleted_meal = meal_data.pop(meal_to_delete)
+            logger.info(f"\nDeleted meal: {deleted_meal['Name']}")
+            save_json_data(USER_MEALS_FILE, meal_data)
+        else:
+            logger.warning("Invalid meal number!")
+    except ValueError:
+        logger.error("Please enter a valid number!")
 
 
 def get_meals():
@@ -202,3 +228,4 @@ def get_meals():
 
 def save_dietly():
     print("Save_dietly")
+
