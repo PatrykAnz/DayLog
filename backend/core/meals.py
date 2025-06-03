@@ -19,33 +19,33 @@ def create_meal():
                 meal_tag = "Meal"
                 break
             else:
-                print("Choose between 1 or 2")
+                logger.info("Choose between 1 or 2")
         except ValueError:
-            print("Choose between 1 or 2")
+            logger.info("Choose between 1 or 2")
     while True:
         try:
             meal_kcal = int(input("Write kcal: "))
             break
         except ValueError:
-            print("Choose a valid number")
+            logger.info("Choose a valid number")
     while True:
         try:
             meal_fat = int(input("Write fat: "))
             break
         except ValueError:
-            print("Choose a valid number")
+            logger.info("Choose a valid number")
     while True:
         try:
             meal_carbs = int(input("Write carbs: "))
             break
         except ValueError:
-            print("Choose a valid number")
+            logger.info("Choose a valid number")
     while True:
         try:
             meal_protein = int(input("Write protein: "))
             break
         except ValueError:
-            print("Choose a valid number")
+            logger.info("Choose a valid number")
     meal_data = []
     meal_data = load_json_data(USER_MEALS_FILE)
     new_meal = {
@@ -61,7 +61,7 @@ def create_meal():
 
 
 def read_meal():
-    print("read_meal")
+    logger.info("read_meal")
     meal_data = load_json_data(USER_MEALS_FILE)
     if not meal_data:
         logger.warning("No meals found")
@@ -227,5 +227,5 @@ def get_meals():
 
 
 def save_dietly():
-    print("Save_dietly")
+    logger.info("Save_dietly")
 
