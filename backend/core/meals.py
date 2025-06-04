@@ -104,7 +104,7 @@ def update_meal():
 
             while True:
                 try:
-                    logger("1: 100g\n2: Meal")
+                    logger.info("1: 100g\n2: Meal")
                     new_tag = int(
                         input(f"New tag: [{meal_data[meal_to_update]['Tag']}]: ")
                         or meal_data[meal_to_update]["Tag"]
