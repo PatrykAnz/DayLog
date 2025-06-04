@@ -3,14 +3,15 @@ import json
 from garminconnect import Garmin
 from pathlib import Path
 from dotenv import load_dotenv
+from common.config import GARMIN_EMAIL, GARMIN_PASSWORD
 from common.data_operations import load_json_data, save_json_data
 from datetime import datetime
 from common.logging_config import logger
 
 load_dotenv()
 
-email = os.getenv("GARMIN_EMAIL")
-password = os.getenv("GARMIN_PASSWORD")
+email = GARMIN_EMAIL
+password = GARMIN_PASSWORD
 
 
 def get_garmin() -> dict:

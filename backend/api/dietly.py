@@ -1,6 +1,7 @@
 import os
 import time
 
+from common.logging_config import logger
 from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -10,19 +11,19 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
-
-from common.logging_config import logger
+from common.config import (
+    USER_MEALS_FILE,
+    DIETLY_EMAIL,
+    DIETLY_PASSWORD,
+)
+from common.data_operations import load_json_data
 
 load_dotenv()
 
 
-DIETLY_EMAIL = os.getenv("DIETLY_EMAIL")
-DIETLY_PASSWORD = os.getenv("DIETLY_PASSWORD")
-
-
 def get_dietly():
     chrome_options = Options()
-    chrome_options.add_experimental_option("detach", False)
+    chrome_options.add_experimental_option("detach", True)
     # chrome_options.add_argument("--headless=new")
     chrome_options.add_argument("--start-maximized")
 
@@ -74,7 +75,7 @@ def get_dietly():
         )
     )
 
-    meals_data = []
+    meal_data = load_json_data(USER_MEALS_FILE)
     for meal in meal_elements:
         try:
             meal_type = meal.find_element(By.CSS_SELECTOR, ".label-s").text.strip()
@@ -82,21 +83,19 @@ def get_dietly():
                 By.CSS_SELECTOR, ".body-m.color-gray-900 span"
             ).text.strip()
 
-            # Get all macro elements
             macros_div = meal.find_element(
                 By.CSS_SELECTOR,
                 ".display-flex.flex-wrap.align-items-center.body-m.color-gray-400",
             )
             macros_text = macros_div.text.strip()
 
-            # Parse macros text
             macro_parts = macros_text.split("•")
             kcal = macro_parts[0].strip().replace("kcal", "").strip()
             prot = macro_parts[1].strip().replace("B:", "").replace("g", "").strip()
             carbs = macro_parts[2].strip().replace("W:", "").replace("g", "").strip()
             fat = macro_parts[3].strip().replace("T:", "").replace("g", "").strip()
 
-            meal_data = {
+            new_meal = {
                 "Meal": meal_type,
                 "Tag": "DIETA",
                 "Name": meal_name,
@@ -105,20 +104,22 @@ def get_dietly():
                 "Carbs": carbs,
                 "Fat": fat,
             }
-            meals_data.append(meal_data)
-
-            logger.info(f"\n{meal_type}:")
-            logger.info(f"Name: {meal_name}")
-            logger.info(f"Calories: {kcal}kcal")
-            logger.info(f"Protein: {prot}g")
-            logger.info(f"Carbs: {carbs}g")
-            logger.info(f"Fat: {fat}g")
-
+            existing_meal = any(meal.get("Name") == meal_name for meal in meal_data)
+            if existing_meal:
+                logger.info("data for this meal is already saved")
+            else:
+                meal_data.append(new_meal)
+                logger.info(f"\n{meal_type}:")
+                logger.info(f"Name: {meal_name}")
+                logger.info(f"Calories: {kcal}kcal")
+                logger.info(f"Protein: {prot}g")
+                logger.info(f"Carbs: {carbs}g")
+                logger.info(f"Fat: {fat}g")
         except Exception as e:
             logger.error(f"Error parsing meal: {e}")
 
     driver.quit()
-    return meals_data
+    return meal_data
 
 
 if __name__ == "__main__":
