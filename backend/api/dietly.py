@@ -20,6 +20,7 @@ from common.data_operations import load_json_data
 
 load_dotenv()
 
+
 def get_dietly():
     chrome_options = Options()
     chrome_options.add_experimental_option("detach", True)
@@ -82,14 +83,12 @@ def get_dietly():
                 By.CSS_SELECTOR, ".body-m.color-gray-900 span"
             ).text.strip()
 
-            # Get all macro elements
             macros_div = meal.find_element(
                 By.CSS_SELECTOR,
                 ".display-flex.flex-wrap.align-items-center.body-m.color-gray-400",
             )
             macros_text = macros_div.text.strip()
 
-            # Parse macros text
             macro_parts = macros_text.split("•")
             kcal = macro_parts[0].strip().replace("kcal", "").strip()
             prot = macro_parts[1].strip().replace("B:", "").replace("g", "").strip()
@@ -105,15 +104,17 @@ def get_dietly():
                 "Carbs": carbs,
                 "Fat": fat,
             }
-            meal_data.append(new_meal)
-
-            logger.info(f"\n{meal_type}:")
-            logger.info(f"Name: {meal_name}")
-            logger.info(f"Calories: {kcal}kcal")
-            logger.info(f"Protein: {prot}g")
-            logger.info(f"Carbs: {carbs}g")
-            logger.info(f"Fat: {fat}g")
-
+            existing_meal = any(meal.get("Name") == meal_name for meal in meal_data)
+            if existing_meal:
+                logger.info("data for this meal is already saved")
+            else:
+                meal_data.append(new_meal)
+                logger.info(f"\n{meal_type}:")
+                logger.info(f"Name: {meal_name}")
+                logger.info(f"Calories: {kcal}kcal")
+                logger.info(f"Protein: {prot}g")
+                logger.info(f"Carbs: {carbs}g")
+                logger.info(f"Fat: {fat}g")
         except Exception as e:
             logger.error(f"Error parsing meal: {e}")
 
