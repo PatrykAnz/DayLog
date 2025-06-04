@@ -11,13 +11,14 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
+from common.config import (
+    USER_MEALS_FILE,
+    DIETLY_EMAIL,
+    DIETLY_PASSWORD,
+)
+from common.data_operations import load_json_data
 
 load_dotenv()
-
-
-DIETLY_EMAIL = os.getenv("DIETLY_EMAIL")
-DIETLY_PASSWORD = os.getenv("DIETLY_PASSWORD")
-
 
 def get_dietly():
     chrome_options = Options()
@@ -74,6 +75,7 @@ def get_dietly():
     )
 
     meals_data = []
+    meal_data = load_json_data(USER_MEALS_FILE)
     for meal in meal_elements:
         try:
             meal_type = meal.find_element(By.CSS_SELECTOR, ".label-s").text.strip()

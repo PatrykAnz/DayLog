@@ -6,10 +6,11 @@ from urllib.parse import parse_qs, urlencode, urlparse
 import requests
 from common.data_operations import load_json_data, save_json_data
 from common.logging_config import logger
-
-TOKEN_FILE = "withings_token.json"
-CREDS_FILE = "withings_creds.json"
-USER_DATA_FILE = "user_data.json"
+from common.config import (
+    WITHINGS_TOKEN_FILE as TOKEN_FILE,
+    WITHINGS_CREDS_FILE as CREDS_FILE,
+    USER_DATA_FILE,
+)
 
 AUTH_URL = "https://account.withings.com/oauth2_user/authorize2"
 TOKEN_URL = "https://wbsapi.withings.net/v2/oauth2"
