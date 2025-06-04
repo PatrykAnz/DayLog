@@ -3,8 +3,7 @@ from backend.api.dietly import get_dietly
 from common.data_operations import load_json_data, save_json_data
 from common.logging_config import logger
 from common.print_helpers import print_separator
-
-USER_MEALS_FILE = "user_meals.json"
+from common.config import USER_MEALS_FILE
 
 
 def create_meal():
@@ -227,4 +226,3 @@ def get_meals():
 
 def save_dietly():
     logger.info("Save_dietly")
-

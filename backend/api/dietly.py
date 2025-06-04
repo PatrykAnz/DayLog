@@ -74,7 +74,6 @@ def get_dietly():
         )
     )
 
-    meals_data = []
     meal_data = load_json_data(USER_MEALS_FILE)
     for meal in meal_elements:
         try:
@@ -97,7 +96,7 @@ def get_dietly():
             carbs = macro_parts[2].strip().replace("W:", "").replace("g", "").strip()
             fat = macro_parts[3].strip().replace("T:", "").replace("g", "").strip()
 
-            meal_data = {
+            new_meal = {
                 "Meal": meal_type,
                 "Tag": "DIETA",
                 "Name": meal_name,
@@ -106,7 +105,7 @@ def get_dietly():
                 "Carbs": carbs,
                 "Fat": fat,
             }
-            meals_data.append(meal_data)
+            meal_data.append(new_meal)
 
             logger.info(f"\n{meal_type}:")
             logger.info(f"Name: {meal_name}")
@@ -119,7 +118,7 @@ def get_dietly():
             logger.error(f"Error parsing meal: {e}")
 
     driver.quit()
-    return meals_data
+    return meal_data
 
 
 if __name__ == "__main__":
