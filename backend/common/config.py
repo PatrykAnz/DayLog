@@ -7,6 +7,9 @@ load_dotenv()
 DATA_FOLDER_NAME = "user_data"
 DATA_FOLDER_PATH = Path(DATA_FOLDER_NAME)
 
+#DATABASE 
+MAIN_DATABASE_FILE = "main.db"
+
 # JSON data files
 USER_DATA_FILE = "user_data.json"
 USER_MEALS_FILE = "user_meals.json"

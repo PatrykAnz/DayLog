@@ -30,6 +30,7 @@ def get_user_choice():
         8: "Calendar",
         9: "Workouts",
         10: "Meals",
+        11: "Database"
         0: "Exit",
     }
 
