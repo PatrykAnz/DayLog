@@ -4,13 +4,13 @@ from common.data_operations import load_json_data, save_json_data
 from common.logging_config import logger
 from common.print_helpers import print_separator
 from common.config import USER_MEALS_FILE
-
+from common.database import execute_query
 
 def create_meal():
     meal_name = input("Meal Name:")
     while True:
         try:
-            kcal_choice = int(input("1: 100g\n2: Meal\n"))
+            kcal_choice = float(input("1: 100g\n2: Meal\n"))
             if kcal_choice == 1:
                 meal_tag = "100g"
                 break
@@ -23,28 +23,40 @@ def create_meal():
             logger.info("Choose between 1 or 2")
     while True:
         try:
-            meal_kcal = int(input("Write kcal: "))
+            meal_kcal = float(input("Write kcal: "))
             break
         except ValueError:
             logger.info("Choose a valid number")
     while True:
         try:
-            meal_fat = int(input("Write fat: "))
+            meal_fat = float(input("Write fat: "))
             break
         except ValueError:
             logger.info("Choose a valid number")
     while True:
         try:
-            meal_carbs = int(input("Write carbs: "))
+            meal_carbs = float(input("Write carbs: "))
             break
         except ValueError:
             logger.info("Choose a valid number")
     while True:
         try:
-            meal_protein = int(input("Write protein: "))
+            meal_protein = float(input("Write protein: "))
             break
         except ValueError:
             logger.info("Choose a valid number")
+    while True:
+        try:
+            meal_mass_user_choice = input("Write mass: (Can be skipped)")
+            if meal_mass_user_choice == "":
+                meal_mass = None
+                break
+            else:
+                meal_mass = float(meal_mass_user_choice)
+                break
+        except ValueError:
+            logger.info("Choose a valid number")
+
     meal_data = []
     meal_data = load_json_data(USER_MEALS_FILE)
     new_meal = {
@@ -54,6 +66,7 @@ def create_meal():
         "Protein": meal_protein,
         "Carbs": meal_carbs,
         "Fat": meal_fat,
+        "Mass": meal_mass,
     }
     meal_data.append(new_meal)
     save_json_data(USER_MEALS_FILE, meal_data)
@@ -187,6 +200,38 @@ def delete_meal():
         logger.error("Please enter a valid number!")
 
 
+def create_meals_today_table():
+    cur.execute(
+        """CREATE TABLE IF NOT EXISTS meals_today(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            meal_id INT NOT NULL,
+            time DATETIME DEFAULT CURRENT_TIMESTAMP,
+            quantity INT DEFAULT 1,
+            FOREIGN KEY (meal_id) REFERENCES meals(id)
+        )"""
+    )
+
+
+def create_meal_today():
+    meal_name_today = input("Write what you ate: \n")
+    cur.execute(
+        """SELECT * FROM meals_today WHERE name IS
+            """
+    )
+
+
+def read_meal_today():
+    print("test")
+
+
+def update_meal_today():
+    print("test")
+
+
+def delete_meal_today():
+    print("test")
+
+
 def get_meals():
     choices = {
         1: "Create Meal",
@@ -194,6 +239,10 @@ def get_meals():
         3: "Update Meal",
         4: "Delete Meal",
         5: "Save todays Dietly",
+        6: "Create Eaten Meal Today",
+        7: "Read Eaten Meals Today",
+        8: "Update Eaten Meal Today",
+        9: "Delete Eaten Meal Today",
         0: "Exit",
     }
     while True:
@@ -208,14 +257,22 @@ def get_meals():
                 logger.info(f"\n{choices[user_choice]}:")
                 if user_choice == 1:
                     create_meal()
-                if user_choice == 2:
+                elif user_choice == 2:
                     read_meal()
-                if user_choice == 3:
+                elif user_choice == 3:
                     update_meal()
-                if user_choice == 4:
+                elif user_choice == 4:
                     delete_meal()
-                if user_choice == 5:
+                elif user_choice == 5:
                     save_json_data(USER_MEALS_FILE, get_dietly())
+                elif user_choice == 6:
+                    create_meal_today()
+                elif user_choice == 7:
+                    read_meal_today()
+                elif user_choice == 8:
+                    update_meal_today()
+                elif user_choice == 9:
+                    delete_meal_today()
                 input("\nPress enter to return")
             else:
                 logger.warning("Invalid choice. Please try again.")

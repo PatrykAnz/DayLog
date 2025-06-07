@@ -12,8 +12,9 @@ from core.meals import get_meals
 from core.notes import get_notes
 from core.tasks import get_tasks
 from core.workouts import get_workout
-from user_data.database import get_database
+from common.database import get_database
 
+from user_data.transfer_meals import transfer_dietly_meals
 data_folder = Path("user_data")
 data_file = data_folder / "user_data.json"
 
@@ -32,6 +33,7 @@ def get_user_choice():
         9: "Workouts",
         10: "Meals",
         11: "Database",
+        12: "test",
         0: "Exit",
     }
 
@@ -70,7 +72,9 @@ def get_user_choice():
                 elif user_choice == 10:
                     return get_meals()
                 elif user_choice ==11:
-                    return get_database
+                    return get_database()
+                elif user_choice ==12:
+                    return transfer_dietly_meals()
 
                 input("\nPress enter to return")
             else:
