@@ -1,11 +1,12 @@
 import sqlite3
 import os
 
-from common.config import MAIN_DATABASE_FILE
+from common.config import MAIN_DATABASE_PATH
+from common.logging_config import logger
 
-#COMMON USAGE
+# COMMON USAGE
 def get_connection():
-    return sqlite3.connect(MAIN_DATABASE_FILE)
+    return sqlite3.connect(MAIN_DATABASE_PATH)
 
 
 def get_cursor():
@@ -23,7 +24,7 @@ def execute_query(query, params=()):
         con.close()
 
 
-#CREATE TABLES
+# CREATE TABLES
 def create_calendar_table():
     execute_query(
         """CREATE TABLE IF NOT EXISTS calendar(
@@ -69,7 +70,8 @@ def create_meals_table():
             calories INT,
             protein_grams INT,
             carbohydrates_grams INT,
-            fat_grams INT
+            fat_grams INT,
+            mass_grams INT
         )"""
     )
 
@@ -116,7 +118,7 @@ def create_withings_table():
         )"""
     )
 
-def create_workouts_table():#TODO later
+def create_workouts_table():  # TODO later
     execute_query(
         """CREATE TABLE IF NOT EXISTS workouts(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -124,21 +126,28 @@ def create_workouts_table():#TODO later
         )"""
     )
 
-def add_meal_to_table(
-    name, tag, calories, protein_grams, carbohydrates_grams, fat_grams
-):
+
+def add_meal_to_table(name, tag, calories, protein_grams, carbohydrates_grams, fat_grams, mass_grams):
     execute_query(
-        "INSERT INTO meals (name, tag, calories, protein_grams, carbohydrates_grams, fat_grams) VALUES (?, ?, ?, ?, ?, ?)",
-        (name, tag, calories, protein_grams, carbohydrates_grams, fat_grams),
+        "INSERT INTO meals (name, tag, calories, protein_grams, carbohydrates_grams, fat_grams, mass_grams) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (name, tag, calories, protein_grams, carbohydrates_grams, fat_grams, mass_grams,)
+    )
+def read_last_rows_from_table(table_name):
+    last_rows = execute_query(f"SELECT * FROM {table_name} LIMIT 5")
+    return last_rows
+
+def check_name_from_table(table_name, name):
+    return execute_query(
+        f"SELECT * FROM {table_name} WHERE name = ? LIMIT 10", (name,)
     )
 
-
 def get_database():
+    create_calendar_table()
+    create_dietly_table()
+    create_garmin_table()
     create_meals_table()
     create_meals_today_table()
-    add_meal_to_table("test", "tag", "calories", 100, 20, 30, 40)
-    con, cur = get_cursor()
-    cur.execute("SELECT * FROM meals_today LIMIT 10")
-    print(row)
-    cur.execute("SELECT * FROM meals LIMIT 10")
-    print(rows)
+    create_notes_table()
+    create_tasks_table()
+    create_withings_table()
+    create_workouts_table()

@@ -3,8 +3,8 @@ from backend.api.dietly import get_dietly
 from common.data_operations import load_json_data, save_json_data
 from common.logging_config import logger
 from common.print_helpers import print_separator
-from common.config import USER_MEALS_FILE
-from common.database import execute_query
+from common.config import USER_MEALS_FILE, DATABASE_MEALS_TABLE 
+from common.database import add_meal_to_table, check_name_from_table, read_last_rows_from_table
 
 def create_meal():
     meal_name = input("Meal Name:")
@@ -57,37 +57,40 @@ def create_meal():
         except ValueError:
             logger.info("Choose a valid number")
 
-    meal_data = []
-    meal_data = load_json_data(USER_MEALS_FILE)
-    new_meal = {
-        "Name": meal_name,
-        "Tag": meal_tag,
-        "Kcal": meal_kcal,
-        "Protein": meal_protein,
-        "Carbs": meal_carbs,
-        "Fat": meal_fat,
-        "Mass": meal_mass,
-    }
-    meal_data.append(new_meal)
-    save_json_data(USER_MEALS_FILE, meal_data)
+    add_meal_to_table(meal_name, meal_tag, meal_kcal, meal_fat, meal_carbs, meal_protein, meal_mass)
+    
+    result = check_name_from_table(DATABASE_MEALS_TABLE, meal_name)
+    if result:
+        logger.info(f"RESULT: {result}")
+        logger.info(f"Meal '{meal_name}' successfully added to database!")
+    else: 
+        logger.info(f"There was an error adding the meal")
 
 
 def read_meal():
-    meal_data = load_json_data(USER_MEALS_FILE)
+    meal_data = read_last_rows_from_table(DATABASE_MEALS_TABLE)
     if not meal_data:
         logger.warning("No meals found")
         return
     print_separator()
-    for i, meal in enumerate(meal_data, 1):
-        logger.info(f"Meal {i}")
-        logger.info(f"Name: {meal['Name']} ")
-        logger.info(f"Tag: {meal['Tag']}")
-        logger.info(f"Kcal: {meal['Kcal']}")
-        logger.info(f"Protein: {meal['Protein']}")
-        logger.info(f"Carbs: {meal['Carbs']}")
-        logger.info(f"Fat: {meal['Fat']}")
+    logger.info("SAVED MEALS:")
+    print_separator()
+    
+    for meal in meal_data:
+        meal_id, name, tag, calories, protein, carbs, fat, mass = meal
+        
+        logger.info(f"️Meal ID: {meal_id}")
+        logger.info(f"Name: {name}")
+        logger.info(f"Tag: {tag}")
+        logger.info(f"Calories: {calories} kcal")
+        logger.info(f"Protein: {protein}g")
+        logger.info(f"Carbohydrates: {carbs}g") 
+        logger.info(f"Fat: {fat}g")
+        if mass:
+            logger.info(f"Mass: {mass}g")
+        else:
+            logger.info(f"Mass: no data")
         print_separator()
-
 
 def update_meal():
     meal_data = load_json_data(USER_MEALS_FILE)
@@ -213,12 +216,7 @@ def create_meals_today_table():
 
 
 def create_meal_today():
-    meal_name_today = input("Write what you ate: \n")
-    cur.execute(
-        """SELECT * FROM meals_today WHERE name IS
-            """
-    )
-
+    print("test")
 
 def read_meal_today():
     print("test")

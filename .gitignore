@@ -5,6 +5,8 @@ user_data
 __pycache__
 DOC
 __init__.py
+main.db
 #temporary
 frontend
 app.log
+
