@@ -132,6 +132,17 @@ def add_meal_to_table(name, tag, calories, protein_grams, carbohydrates_grams, f
         "INSERT INTO meals (name, tag, calories, protein_grams, carbohydrates_grams, fat_grams, mass_grams) VALUES (?, ?, ?, ?, ?, ?, ?)",
         (name, tag, calories, protein_grams, carbohydrates_grams, fat_grams, mass_grams,)
     )
+
+def update_meal_in_table(meal_id, name, tag, calories, protein_grams, carbohydrates_grams, fat_grams, mass_grams):
+    execute_query(
+        "UPDATE meals SET name = ?, tag = ?, calories = ?, protein_grams = ?, carbohydrates_grams = ?, fat_grams = ?, mass_grams = ? WHERE id = ?",
+        (name, tag, calories, protein_grams, carbohydrates_grams, fat_grams, mass_grams, meal_id)
+    )
+
+def get_meal_by_id(meal_id):
+    result = execute_query("SELECT * FROM meals WHERE id = ?", (meal_id,))
+    return result[0] if result else None
+
 def read_last_rows_from_table(table_name):
     last_rows = execute_query(f"SELECT * FROM {table_name} LIMIT 5")
     return last_rows
