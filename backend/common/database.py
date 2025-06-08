@@ -143,6 +143,9 @@ def get_meal_by_id(meal_id):
     result = execute_query("SELECT * FROM meals WHERE id = ?", (meal_id,))
     return result[0] if result else None
 
+def delete_meal_from_table(meal_id):
+    execute_query("DELETE FROM meals WHERE id = ?", (meal_id,))
+
 def read_last_rows_from_table(table_name):
     last_rows = execute_query(f"SELECT * FROM {table_name} LIMIT 5")
     return last_rows
