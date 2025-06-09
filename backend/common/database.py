@@ -67,6 +67,7 @@ def create_meals_table():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             tag TEXT,
+            description TEXT,
             calories INT,
             protein_grams INT,
             carbohydrates_grams INT,
@@ -74,6 +75,12 @@ def create_meals_table():
             mass_grams INT
         )"""
     )
+    # Add description column to existing tables if it doesn't exist
+    try:
+        execute_query("ALTER TABLE meals ADD COLUMN description TEXT")
+    except:
+        # Column already exists, ignore the error
+        pass
 
 def create_meals_today_table():
     execute_query(
@@ -127,16 +134,16 @@ def create_workouts_table():  # TODO later
     )
 
 
-def add_meal_to_table(name, tag, calories, protein_grams, carbohydrates_grams, fat_grams, mass_grams):
+def add_meal_to_table(name, tag, description, calories, protein_grams, carbohydrates_grams, fat_grams, mass_grams):
     execute_query(
-        "INSERT INTO meals (name, tag, calories, protein_grams, carbohydrates_grams, fat_grams, mass_grams) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (name, tag, calories, protein_grams, carbohydrates_grams, fat_grams, mass_grams,)
+        "INSERT INTO meals (name, tag, description, calories, protein_grams, carbohydrates_grams, fat_grams, mass_grams) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (name, tag, description, calories, protein_grams, carbohydrates_grams, fat_grams, mass_grams,)
     )
 
-def update_meal_in_table(meal_id, name, tag, calories, protein_grams, carbohydrates_grams, fat_grams, mass_grams):
+def update_meal_in_table(meal_id, name, tag, description, calories, protein_grams, carbohydrates_grams, fat_grams, mass_grams):
     execute_query(
-        "UPDATE meals SET name = ?, tag = ?, calories = ?, protein_grams = ?, carbohydrates_grams = ?, fat_grams = ?, mass_grams = ? WHERE id = ?",
-        (name, tag, calories, protein_grams, carbohydrates_grams, fat_grams, mass_grams, meal_id)
+        "UPDATE meals SET name = ?, tag = ?, description = ?, calories = ?, protein_grams = ?, carbohydrates_grams = ?, fat_grams = ?, mass_grams = ? WHERE id = ?",
+        (name, tag, description, calories, protein_grams, carbohydrates_grams, fat_grams, mass_grams, meal_id)
     )
 
 def get_meal_by_id(meal_id):

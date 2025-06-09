@@ -65,8 +65,19 @@ def create_meal():
         except ValueError:
             logger.info("Choose a valid number")
 
+    meal_description = input("Write description (Can be skipped): ")
+    if meal_description.strip() == "":
+        meal_description = None
+
     add_meal_to_table(
-        meal_name, meal_tag, meal_kcal, meal_fat, meal_carbs, meal_protein, meal_mass
+        meal_name,
+        meal_tag,
+        meal_description,
+        meal_kcal,
+        meal_fat,
+        meal_carbs,
+        meal_protein,
+        meal_mass,
     )
 
     result = check_name_from_table(DATABASE_MEALS_TABLE, meal_name)
@@ -87,11 +98,15 @@ def read_meal():
     print_separator()
 
     for meal in meal_data:
-        meal_id, name, tag, calories, protein, carbs, fat, mass = meal
+        meal_id, name, tag, description, calories, protein, carbs, fat, mass = meal
 
         logger.info(f"️Meal ID: {meal_id}")
         logger.info(f"Name: {name}")
         logger.info(f"Tag: {tag}")
+        if description:
+            logger.info(f"Description: {description}")
+        else:
+            logger.info(f"Description: no data")
         logger.info(f"Calories: {calories} kcal")
         logger.info(f"Protein: {protein}g")
         logger.info(f"Carbohydrates: {carbs}g")
@@ -113,10 +128,14 @@ def update_meal():
     print_separator()
 
     for meal in meal_data:
-        meal_id, name, tag, calories, protein, carbs, fat, mass = meal
+        meal_id, name, tag, description, calories, protein, carbs, fat, mass = meal
         logger.info(f"Meal ID: {meal_id}")
         logger.info(f"Name: {name}")
         logger.info(f"Tag: {tag}")
+        if description:
+            logger.info(f"Description: {description}")
+        else:
+            logger.info(f"Description: no data")
         logger.info(f"Calories: {calories} kcal")
         logger.info(f"Protein: {protein}g")
         logger.info(f"Carbohydrates: {carbs}g")
@@ -141,6 +160,7 @@ def update_meal():
             meal_id,
             current_name,
             current_tag,
+            current_description,
             current_calories,
             current_protein,
             current_carbs,
@@ -153,6 +173,16 @@ def update_meal():
 
         new_name_input = input(f"New name [{current_name}]: ")
         new_name = new_name_input if new_name_input.strip() else current_name
+
+        description_display = current_description if current_description else "no data"
+        new_description_input = input(
+            f"New description [{description_display}]: (Can be skipped)"
+        )
+        new_description = (
+            new_description_input
+            if new_description_input.strip()
+            else current_description
+        )
 
         while True:
             try:
@@ -232,6 +262,7 @@ def update_meal():
             meal_id_to_update,
             new_name,
             new_tag,
+            new_description,
             new_calories,
             new_protein,
             new_carbs,
@@ -259,10 +290,14 @@ def delete_meal():
     print_separator()
 
     for meal in meal_data:
-        meal_id, name, tag, calories, protein, carbs, fat, mass = meal
+        meal_id, name, tag, description, calories, protein, carbs, fat, mass = meal
         logger.info(f"Meal ID: {meal_id}")
         logger.info(f"Name: {name}")
         logger.info(f"Tag: {tag}")
+        if description:
+            logger.info(f"Description: {description}")
+        else:
+            logger.info(f"Description: no data")
         logger.info(f"Calories: {calories} kcal")
         logger.info(f"Protein: {protein}g")
         logger.info(f"Carbohydrates: {carbs}g")
@@ -283,7 +318,9 @@ def delete_meal():
             logger.warning("Meal ID not found!")
             return
 
-        meal_id, name, tag, calories, protein, carbs, fat, mass = current_meal
+        meal_id, name, tag, description, calories, protein, carbs, fat, mass = (
+            current_meal
+        )
 
         logger.info(f"\nAre you sure you want to delete meal: {name}?")
         confirmation = input("Type 'yes' to confirm: ").lower()
@@ -304,10 +341,78 @@ def delete_meal():
 
 
 def create_meal_today():
+    logger.info("Creating meal entry for today:")
+    meal_name = input("Write name of the meal: ")
+    meal_data = check_name_from_table(DATABASE_MEALS_TABLE, meal_name)
 
-            
-        
+    if not meal_data:
+        try:
+            user_choice = input(
+                "No meals added with that name. Do you want to add a new meal?\n1: YES\n2: NO\n"
+            )
+            if user_choice == "1":
+                create_meal()
+                # search after creation
+                meal_data = check_name_from_table(DATABASE_MEALS_TABLE, meal_name)
+                if not meal_data:
+                    logger.warning("Meal was not created")
+                    return
+            elif user_choice == "2":
+                return
+            else:
+                logger.info("Please choose 1 or 2")
+                return
+        except ValueError:
+            logger.info("Please enter a valid number!")
+            return
 
+    # data exists
+    logger.info("Meals found:")
+    for i, meal in enumerate(meal_data):
+        try:
+            meal_id, name, tag, description, calories, protein, carbs, fat, mass = meal
+            logger.info(f"{i + 1}. {name} ({tag}) - {calories} kcal")
+            if description:
+                logger.info(f"   Description: {description}")
+        except ValueError as e:
+            logger.error(f"Error unpacking meal data: {e}")
+            logger.error(f"Meal data length: {len(meal)}")
+            logger.error(f"Meal data: {meal}")
+            return
+
+    if len(meal_data) > 1:
+        try:
+            choice = int(input("Select meal number: ")) - 1
+            if 0 <= choice < len(meal_data):
+                selected_meal = meal_data[choice]
+            else:
+                logger.warning("Invalid selection!")
+                return
+        except ValueError:
+            logger.error("Please enter a valid number!")
+            return
+    else:
+        selected_meal = meal_data[0]
+
+    meal_id, name, tag, description, calories, protein, carbs, fat, mass = selected_meal
+
+    while True:
+        try:
+            if tag == "100g":
+                quantity = float(input("Enter quantity in grams: "))
+                quantity_unit = "grams"
+            elif tag == "Meal":
+                quantity = float(input("Enter number of meals: "))
+                quantity_unit = "meals"
+            else:
+                quantity = float(input("Enter quantity: "))
+                quantity_unit = "portions"
+            break
+        except ValueError:
+            logger.info("Please enter a valid number!")
+
+    # TODO: Add meal to meals_today table
+    logger.info(f"Added {quantity} {quantity_unit} of {name} ({tag}) to today's meals!")
 
 
 def read_meal_today():
