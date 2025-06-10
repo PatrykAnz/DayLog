@@ -54,17 +54,6 @@ def create_meal():
             break
         except ValueError:
             logger.info("Choose a valid number")
-    while True:
-        try:
-            meal_mass_user_choice = input("Write mass: (Can be skipped)")
-            if meal_mass_user_choice == "":
-                meal_mass = None
-                break
-            else:
-                meal_mass = float(meal_mass_user_choice)
-                break
-        except ValueError:
-            logger.info("Choose a valid number")
 
     meal_description = input("Write description (Can be skipped): ")
     if meal_description.strip() == "":
@@ -78,7 +67,7 @@ def create_meal():
         meal_fat,
         meal_carbs,
         meal_protein,
-        meal_mass,
+        None,
     )
 
     result = check_name_from_table(DATABASE_MEALS_TABLE, meal_name)
@@ -112,10 +101,6 @@ def read_meal():
         logger.info(f"Protein: {protein}g")
         logger.info(f"Carbohydrates: {carbs}g")
         logger.info(f"Fat: {fat}g")
-        if mass:
-            logger.info(f"Mass: {mass}g")
-        else:
-            logger.info(f"Mass: no data")
         print_separator()
 
 
@@ -141,10 +126,6 @@ def update_meal():
         logger.info(f"Protein: {protein}g")
         logger.info(f"Carbohydrates: {carbs}g")
         logger.info(f"Fat: {fat}g")
-        if mass:
-            logger.info(f"Mass: {mass}g")
-        else:
-            logger.info(f"Mass: no data")
         print_separator()
 
     try:
@@ -247,18 +228,6 @@ def update_meal():
             except ValueError:
                 logger.info("Choose a valid number")
 
-        while True:
-            try:
-                mass_display = current_mass if current_mass else "no data"
-                mass_input = input(f"New mass [{mass_display}]: (Can be skipped)")
-                if not mass_input.strip():
-                    new_mass = current_mass
-                    break
-                new_mass = float(mass_input) if mass_input else None
-                break
-            except ValueError:
-                logger.info("Choose a valid number")
-
         update_meal_in_table(
             meal_id_to_update,
             new_name,
@@ -268,7 +237,7 @@ def update_meal():
             new_protein,
             new_carbs,
             new_fat,
-            new_mass,
+            None,
         )
 
         updated_meal = get_meal_by_id(meal_id_to_update)
@@ -303,10 +272,6 @@ def delete_meal():
         logger.info(f"Protein: {protein}g")
         logger.info(f"Carbohydrates: {carbs}g")
         logger.info(f"Fat: {fat}g")
-        if mass:
-            logger.info(f"Mass: {mass}g")
-        else:
-            logger.info(f"Mass: no data")
         print_separator()
 
     try:
@@ -391,37 +356,43 @@ def create_meal_today():
 
     while True:
         try:
-            percentage_input = input("Enter percentage eaten (0-100%): ").strip()
-            percentage = float(percentage_input.replace('%', ''))
+            grams_input = input("Enter grams consumed: ").strip()
+            grams_consumed = float(grams_input)
             
-            if 0 <= percentage <= 100:
-                if percentage > 0:
-                    actual_calories = calories * percentage / 100
-                    actual_protein = protein * percentage / 100
-                    actual_carbs = carbs * percentage / 100
-                    actual_fat = fat * percentage / 100
+            if grams_consumed >= 0:
+                if grams_consumed > 0:
+                    if tag == "100g":
+                        actual_calories = calories * grams_consumed / 100
+                        actual_protein = protein * grams_consumed / 100
+                        actual_carbs = carbs * grams_consumed / 100
+                        actual_fat = fat * grams_consumed / 100
+                    else:
+                        actual_calories = calories
+                        actual_protein = protein
+                        actual_carbs = carbs
+                        actual_fat = fat
                     
                     execute_query(
                         """INSERT INTO meals_today 
-                           (meal_id, meal_source, name, tag, calories, protein_grams, carbohydrates_grams, fat_grams, percentage) 
+                           (meal_id, meal_source, name, tag, calories, protein_grams, carbohydrates_grams, fat_grams, grams_consumed) 
                            VALUES (?, 'manual', ?, ?, ?, ?, ?, ?, ?)""",
-                        (meal_id, name, tag, actual_calories, actual_protein, actual_carbs, actual_fat, percentage)
+                        (meal_id, name, tag, actual_calories, actual_protein, actual_carbs, actual_fat, grams_consumed)
                     )
                     
-                    logger.info(f"Added {percentage}% of {name} ({tag}) to today's meals!")
+                    logger.info(f"Added {grams_consumed}g of {name} ({tag}) to today's meals!")
                     logger.info(f"Consumed: {actual_calories:.1f} kcal, {actual_protein:.1f}g protein, {actual_carbs:.1f}g carbs, {actual_fat:.1f}g fat")
                 else:
-                    logger.info(f"Skipped {name} (0% eaten)")
+                    logger.info(f"Skipped {name} (0g consumed)")
                 break
             else:
-                logger.info("Please enter a percentage between 0 and 100")
+                logger.info("Please enter a positive number")
         except ValueError:
             logger.info("Please enter a valid number!")
 
 
 def read_meal_today():
     today_meals = execute_query("""
-        SELECT id, meal_id, meal_source, name, tag, calories, protein_grams, carbohydrates_grams, fat_grams, time, percentage
+        SELECT id, meal_id, meal_source, name, tag, calories, protein_grams, carbohydrates_grams, fat_grams, time, grams_consumed
         FROM meals_today
         WHERE DATE(time) = DATE('now')
         ORDER BY time DESC
@@ -441,7 +412,7 @@ def read_meal_today():
     total_fat = 0
     
     for meal in today_meals:
-        entry_id, meal_id, source, name, tag, calories, protein, carbs, fat, time, percentage = meal
+        entry_id, meal_id, source, name, tag, calories, protein, carbs, fat, time, grams_consumed = meal
         
         total_calories += calories
         total_protein += protein
@@ -452,7 +423,7 @@ def read_meal_today():
         logger.info(f"Meal: {name} ({tag})")
         logger.info(f"Source: {source}")
         logger.info(f"Time: {time}")
-        logger.info(f"Percentage eaten: {percentage}%")
+        logger.info(f"Grams consumed: {grams_consumed}g")
         logger.info(f"Consumed:")
         logger.info(f"  Calories: {calories:.1f} kcal")
         logger.info(f"  Protein: {protein:.1f}g")
@@ -470,7 +441,7 @@ def read_meal_today():
 
 def update_meal_today():
     today_meals = execute_query("""
-        SELECT mt.id, mt.meal_id, mt.meal_source, mt.time, mt.percentage,
+        SELECT mt.id, mt.meal_id, mt.meal_source, mt.time, mt.grams_consumed,
                CASE 
                    WHEN mt.meal_source = 'dietly' THEN d.name
                    ELSE m.name
@@ -490,11 +461,11 @@ def update_meal_today():
     print_separator()
     
     for meal in today_meals:
-        entry_id, meal_id, source, time, percentage, name = meal
+        entry_id, meal_id, source, time, grams_consumed, name = meal
         logger.info(f"Entry ID: {entry_id}")
         logger.info(f"Meal: {name} ({source})")
         logger.info(f"Time: {time}")
-        logger.info(f"Current percentage: {percentage}%")
+        logger.info(f"Current grams: {grams_consumed}g")
         print_separator()
     
     try:
@@ -509,17 +480,17 @@ def update_meal_today():
         
         while True:
             try:
-                new_percentage_input = input("Enter new percentage (0-100%): ").replace('%', '')
-                new_percentage = float(new_percentage_input)
-                if 0 <= new_percentage <= 100:
+                new_grams_input = input("Enter new grams consumed: ")
+                new_grams = float(new_grams_input)
+                if new_grams >= 0:
                     execute_query(
-                        "UPDATE meals_today SET percentage = ? WHERE id = ?",
-                        (new_percentage, entry_id_to_update)
+                        "UPDATE meals_today SET grams_consumed = ? WHERE id = ?",
+                        (new_grams, entry_id_to_update)
                     )
-                    logger.info(f"Updated entry to {new_percentage}%")
+                    logger.info(f"Updated entry to {new_grams}g")
                     break
                 else:
-                    logger.info("Please enter a percentage between 0 and 100")
+                    logger.info("Please enter a positive number")
             except ValueError:
                 logger.info("Please enter a valid number")
                 
@@ -529,7 +500,7 @@ def update_meal_today():
 
 def delete_meal_today():
     today_meals = execute_query("""
-        SELECT mt.id, mt.meal_id, mt.meal_source, mt.time, mt.percentage,
+        SELECT mt.id, mt.meal_id, mt.meal_source, mt.time, mt.grams_consumed,
                CASE 
                    WHEN mt.meal_source = 'dietly' THEN d.name
                    ELSE m.name
@@ -549,11 +520,11 @@ def delete_meal_today():
     print_separator()
     
     for meal in today_meals:
-        entry_id, meal_id, source, time, percentage, name = meal
+        entry_id, meal_id, source, time, grams_consumed, name = meal
         logger.info(f"Entry ID: {entry_id}")
         logger.info(f"Meal: {name} ({source})")
         logger.info(f"Time: {time}")
-        logger.info(f"Percentage: {percentage}%")
+        logger.info(f"Grams: {grams_consumed}g")
         print_separator()
     
     try:

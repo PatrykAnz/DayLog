@@ -133,7 +133,7 @@ def save_dietly_to_today():
         return
     
     logger.info("\nDietly meals saved to database!")
-    logger.info("Now select what percentage of each meal you ate today:")
+    logger.info("Now select how many grams of each meal you ate today:")
     
     for meal in meals:
         meal_id, name, tag, calories, protein, carbs, fat = meal
@@ -143,23 +143,23 @@ def save_dietly_to_today():
         
         while True:
             try:
-                percentage_input = input("Enter percentage eaten (0-100%, or 'skip' to skip): ").strip().lower()
+                grams_input = input("Enter grams consumed (or 'skip' to skip): ").strip().lower()
                 
-                if percentage_input == 'skip':
+                if grams_input == 'skip':
                     logger.info(f"Skipped {name}")
                     break
                 
-                percentage = float(percentage_input.replace('%', ''))
+                grams_consumed = float(grams_input)
                 
-                if 0 <= percentage <= 100:
-                    if percentage > 0:
-                        add_meal_today_from_dietly(meal_id, percentage)
-                        logger.info(f"Added {percentage}% of {name} to today's meals")
+                if grams_consumed >= 0:
+                    if grams_consumed > 0:
+                        add_meal_today_from_dietly(meal_id, grams_consumed)
+                        logger.info(f"Added {grams_consumed}g of {name} to today's meals")
                     else:
-                        logger.info(f"Skipped {name} (0% eaten)")
+                        logger.info(f"Skipped {name} (0g consumed)")
                     break
                 else:
-                    logger.info("Please enter a percentage between 0 and 100")
+                    logger.info("Please enter a positive number")
                     
             except ValueError:
                 logger.info("Please enter a valid number or 'skip'")

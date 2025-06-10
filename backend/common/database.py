@@ -95,7 +95,7 @@ def create_meals_today_table():
             carbohydrates_grams FLOAT,
             fat_grams FLOAT,
             time DATETIME DEFAULT CURRENT_TIMESTAMP,
-            percentage FLOAT DEFAULT 100.0,
+            grams_consumed FLOAT DEFAULT 0.0,
             FOREIGN KEY (meal_id) REFERENCES meals(id)
         )"""
     )
@@ -194,25 +194,29 @@ def get_dietly_meal_by_id(meal_id):
     result = execute_query("SELECT * FROM dietly WHERE id = ?", (meal_id,))
     return result[0] if result else None
 
-def add_meal_today_from_dietly(dietly_meal_id, percentage):
-    # Get the meal data from dietly table
+def add_meal_today_from_dietly(dietly_meal_id, grams_consumed):
     meal_data = get_dietly_meal_by_id(dietly_meal_id)
     if not meal_data:
         return
     
     meal_id, name, tag, calories, protein, carbs, fat = meal_data
     
-    # Calculate actual values based on percentage
-    actual_calories = calories * percentage / 100
-    actual_protein = protein * percentage / 100
-    actual_carbs = carbs * percentage / 100
-    actual_fat = fat * percentage / 100
+    if tag == "100g":
+        actual_calories = calories * grams_consumed / 100
+        actual_protein = protein * grams_consumed / 100
+        actual_carbs = carbs * grams_consumed / 100
+        actual_fat = fat * grams_consumed / 100
+    else:
+        actual_calories = calories
+        actual_protein = protein
+        actual_carbs = carbs
+        actual_fat = fat
     
     execute_query(
         """INSERT INTO meals_today 
-           (meal_id, meal_source, name, tag, calories, protein_grams, carbohydrates_grams, fat_grams, percentage) 
+           (meal_id, meal_source, name, tag, calories, protein_grams, carbohydrates_grams, fat_grams, grams_consumed) 
            VALUES (?, 'dietly', ?, ?, ?, ?, ?, ?, ?)""",
-        (dietly_meal_id, name, tag, actual_calories, actual_protein, actual_carbs, actual_fat, percentage)
+        (dietly_meal_id, name, tag, actual_calories, actual_protein, actual_carbs, actual_fat, grams_consumed)
     )
 
 def get_all_dietly_meals():
