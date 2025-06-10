@@ -4,17 +4,17 @@ import webbrowser
 from urllib.parse import parse_qs, urlencode, urlparse
 
 import requests
-from common.data_operations import load_json_data, save_json_data
-from common.logging_config import logger
-from common.config import (
+from backend.common.data_operations import load_json_data, save_json_data
+from backend.common.logging_config import logger
+from backend.common.config import (
     WITHINGS_TOKEN_FILE as TOKEN_FILE,
     WITHINGS_CREDS_FILE as CREDS_FILE,
     USER_DATA_FILE,
 )
 
 AUTH_URL = "https://account.withings.com/oauth2_user/authorize2"
-TOKEN_URL = "https://wbsapi.withings.net/v2/oauth2"
-API_ENDPOINT = "https://wbsapi.withings.net/measure"
+TOKEN_URL = "https://wbsbackend.api.withings.net/v2/oauth2"
+API_ENDPOINT = "https://wbsbackend.api.withings.net/measure"
 
 
 def get_credentials():

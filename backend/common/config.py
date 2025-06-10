@@ -14,7 +14,7 @@ MAIN_DATABASE_FILE = "main.db"
 MAIN_DATABASE_PATH = DATA_FOLDER_PATH / MAIN_DATABASE_FILE
 
 # JSON data files
-USER_DATA_FILE = "user_data.json"
+USER_DATA_FILE = "backend.user_data.json"
 USER_MEALS_FILE = "user_meals.json"
 USER_TASKS_FILE = "user_tasks.json"
 USER_NOTES_FILE = "user_notes.json"
@@ -46,7 +46,7 @@ def check_required_envs():
     """Log warnings if required environment variables are missing."""
     missing = [key for key, val in REQUIRED_ENVS.items() if not val]
     if missing:
-        from common.logging_config import logger 
+        from backend.common.logging_config import logger 
         logger.warning(
             f"Missing environment variables: {', '.join(missing)}. Some features might not work as expected."
         )

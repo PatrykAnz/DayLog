@@ -1,9 +1,9 @@
 import datetime
 
-from common.data_operations import load_json_data, save_json_data
-from common.logging_config import logger
-from common.print_helpers import print_separator
-from common.config import USER_NOTES_FILE
+from backend.common.data_operations import load_json_data, save_json_data
+from backend.common.logging_config import logger
+from backend.common.print_helpers import print_separator
+from backend.common.config import USER_NOTES_FILE
 
 
 def get_notes():

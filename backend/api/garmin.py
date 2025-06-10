@@ -3,10 +3,10 @@ import json
 from garminconnect import Garmin
 from pathlib import Path
 from dotenv import load_dotenv
-from common.config import GARMIN_EMAIL, GARMIN_PASSWORD
-from common.data_operations import load_json_data, save_json_data
+from backend.common.config import GARMIN_EMAIL, GARMIN_PASSWORD
+from backend.common.data_operations import load_json_data, save_json_data
 from datetime import datetime
-from common.logging_config import logger
+from backend.common.logging_config import logger
 
 load_dotenv()
 
@@ -22,13 +22,13 @@ def get_garmin() -> dict:
     api = Garmin(email, password)
 
     try:
-        api.login()
+        backend.api.login()
 
         today = datetime.now().strftime("%Y-%m-%d")
-        user_data = load_json_data("user_data.json")
+        user_data = load_json_data("backend.user_data.json")
 
-        steps_data = api.get_steps_data(today)
-        sleep_data_raw = api.get_sleep_data(today)
+        steps_data = backend.api.get_steps_data(today)
+        sleep_data_raw = backend.api.get_sleep_data(today)
 
         user_data["Garmin"] = {
             "steps": steps_data,
@@ -62,7 +62,7 @@ def get_garmin() -> dict:
         logger.info(f"Total Awake: {total_awake} seconds ({total_awake/3600:.2f} hours)")
         
         user_data["Garmin"] = aggregated_data
-        save_json_data("user_data.json", user_data)
+        save_json_data("backend.user_data.json", user_data)
         
         return aggregated_data
 

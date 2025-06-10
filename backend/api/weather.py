@@ -1,15 +1,15 @@
 import requests
-from api.geolocation import get_geolocation
+from backend.api.geolocation import get_geolocation
 from pathlib import Path
 import json
-from common.data_operations import check_and_create_user_data
-from common.logging_config import logger
+from backend.common.data_operations import check_and_create_user_data
+from backend.common.logging_config import logger
 
 
 def get_weather():
     check_and_create_user_data()
     data_folder = Path("user_data")
-    data_file = data_folder / "user_data.json"
+    data_file = data_folder / "backend.user_data.json"
 
     with open(data_file, "r") as f:
         user_data = json.load(f)
@@ -28,7 +28,7 @@ def get_weather():
     longitude = user_data["Geolocation"]["longitude"]
 
     request = requests.get(
-        f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current=temperature_2m,weathercode&timezone=auto"
+        f"https://backend.api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current=temperature_2m,weathercode&timezone=auto"
     )
     weather_data = request.json()
 

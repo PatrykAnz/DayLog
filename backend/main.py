@@ -1,22 +1,22 @@
 from pathlib import Path
 
-from api.garmin import get_garmin
-from api.geolocation import get_geolocation
-from api.weather import get_weather
-from api.withings import get_withings
-from common.data_operations import check_and_create_user_data
-from common.logging_config import logger
-from core.clock import get_clock
-from core.event_calendar import get_calendar
-from core.meals import get_meals
-from core.notes import get_notes
-from core.tasks import get_tasks
-from core.workouts import get_workout
-from common.database import get_database
+from backend.api.garmin import get_garmin
+from backend.api.geolocation import get_geolocation
+from backend.api.weather import get_weather
+from backend.api.withings import get_withings
+from backend.common.data_operations import check_and_create_user_data
+from backend.common.logging_config import logger
+from backend.core.clock import get_clock
+from backend.core.event_calendar import get_calendar
+from backend.core.meals import get_meals
+from backend.core.notes import get_notes
+from backend.core.tasks import get_tasks
+from backend.core.workouts import get_workout
+from backend.common.database import get_database
 
-from user_data.transfer_meals import transfer_dietly_meals
+from backend.user_data.transfer_meals import transfer_dietly_meals
 data_folder = Path("user_data")
-data_file = data_folder / "user_data.json"
+data_file = data_folder / "backend.user_data.json"
 
 
 def get_user_choice():

@@ -1,7 +1,7 @@
 import os
 import time
 
-from common.logging_config import logger
+from backend.common.logging_config import logger
 from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -11,11 +11,11 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
-from common.config import (
+from backend.common.config import (
     DIETLY_EMAIL,
     DIETLY_PASSWORD,
 )
-from common.database import (
+from backend.common.database import (
     execute_query,
     add_dietly_meal_to_table,
     check_dietly_meal_exists,
@@ -29,7 +29,6 @@ load_dotenv()
 def get_dietly():
     chrome_options = Options()
     chrome_options.add_experimental_option("detach", True)
-    # chrome_options.add_argument("--headless=new")
     chrome_options.add_argument("--start-maximized")
 
     driver = webdriver.Chrome(
@@ -39,7 +38,6 @@ def get_dietly():
     driver.get("https://dietly.pl/")
     wait = WebDriverWait(driver, 10)
 
-    # Login flow
     login_button = wait.until(
         EC.element_to_be_clickable(
             (

@@ -1,12 +1,12 @@
 import geocoder
 import json
 from pathlib import Path
-from common.data_operations import ensure_data_folder, load_json_data, save_json_data
-from common.logging_config import logger
+from backend.common.data_operations import ensure_data_folder, load_json_data, save_json_data
+from backend.common.logging_config import logger
 
 def get_geolocation(city_name: str = None):
     ensure_data_folder()
-    user_data = load_json_data("user_data.json")
+    user_data = load_json_data("backend.user_data.json")
 
     if city_name:
         # Use provided city name
@@ -21,8 +21,8 @@ def get_geolocation(city_name: str = None):
                 "address": g.address,
             }
 
-            save_json_data("user_data.json", user_data)
-            logger.info(f"Saved location data to user_data.json")
+            save_json_data("backend.user_data.json", user_data)
+            logger.info(f"Saved location data to backend.user_data.json")
             return user_data["Geolocation"]
         else:
             logger.warning("Could not find coordinates for that city.")
@@ -40,8 +40,8 @@ def get_geolocation(city_name: str = None):
                 "address": g.address,
             }
 
-            save_json_data("user_data.json", user_data)
-            logger.info(f"Saved location data to user_data.json")
+            save_json_data("backend.user_data.json", user_data)
+            logger.info(f"Saved location data to backend.user_data.json")
             return user_data["Geolocation"]
         else:
             logger.warning("Could not determine your location based on IP.")

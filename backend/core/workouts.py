@@ -1,4 +1,4 @@
-from common.data_operations import ensure_data_folder, get_file_path, load_json_data, save_json_data
+from backend.common.data_operations import ensure_data_folder, get_file_path, load_json_data, save_json_data
 
 
 def get_workout():

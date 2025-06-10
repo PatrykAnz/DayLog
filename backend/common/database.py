@@ -1,8 +1,8 @@
 import sqlite3
 import os
 
-from common.config import MAIN_DATABASE_PATH
-from common.logging_config import logger
+from backend.common.config import MAIN_DATABASE_PATH
+from backend.common.logging_config import logger
 
 # COMMON USAGE
 def get_connection():
