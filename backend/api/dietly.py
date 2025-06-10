@@ -12,11 +12,16 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 from common.config import (
-    USER_MEALS_FILE,
     DIETLY_EMAIL,
     DIETLY_PASSWORD,
 )
-from common.data_operations import load_json_data
+from common.database import (
+    execute_query,
+    add_dietly_meal_to_table,
+    check_dietly_meal_exists,
+    add_meal_today_from_dietly,
+    get_dietly_meal_by_id
+)
 
 load_dotenv()
 
@@ -75,7 +80,8 @@ def get_dietly():
         )
     )
 
-    meal_data = load_json_data(USER_MEALS_FILE)
+    saved_meals = []
+    
     for meal in meal_elements:
         try:
             meal_type = meal.find_element(By.CSS_SELECTOR, ".label-s").text.strip()
@@ -90,38 +96,79 @@ def get_dietly():
             macros_text = macros_div.text.strip()
 
             macro_parts = macros_text.split("•")
-            kcal = macro_parts[0].strip().replace("kcal", "").strip()
-            prot = macro_parts[1].strip().replace("B:", "").replace("g", "").strip()
-            carbs = macro_parts[2].strip().replace("W:", "").replace("g", "").strip()
-            fat = macro_parts[3].strip().replace("T:", "").replace("g", "").strip()
+            kcal = float(macro_parts[0].strip().replace("kcal", "").strip().replace(",", "."))
+            prot = float(macro_parts[1].strip().replace("B:", "").replace("g", "").strip().replace(",", "."))
+            carbs = float(macro_parts[2].strip().replace("W:", "").replace("g", "").strip().replace(",", "."))
+            fat = float(macro_parts[3].strip().replace("T:", "").replace("g", "").strip().replace(",", "."))
 
-            new_meal = {
-                "Meal": meal_type,
-                "Tag": "DIETA",
-                "Name": meal_name,
-                "Kcal": kcal,
-                "Protein": prot,
-                "Carbs": carbs,
-                "Fat": fat,
-            }
-            existing_meal = any(meal.get("Name") == meal_name for meal in meal_data)
+            existing_meal = check_dietly_meal_exists(meal_name)
+
             if existing_meal:
-                logger.info("data for this meal is already saved")
+                logger.info(f"Meal '{meal_name}' already exists in dietly database")
+                saved_meals.append(existing_meal)
             else:
-                meal_data.append(new_meal)
-                logger.info(f"\n{meal_type}:")
+                add_dietly_meal_to_table(meal_name, meal_type, kcal, prot, carbs, fat)
+                logger.info(f"Added new meal to dietly database:")
                 logger.info(f"Name: {meal_name}")
+                logger.info(f"Type: {meal_type}")
                 logger.info(f"Calories: {kcal}kcal")
                 logger.info(f"Protein: {prot}g")
                 logger.info(f"Carbs: {carbs}g")
                 logger.info(f"Fat: {fat}g")
+                
+                new_meal = check_dietly_meal_exists(meal_name)
+                if new_meal:
+                    saved_meals.append(new_meal)
+                    
         except Exception as e:
             logger.error(f"Error parsing meal: {e}")
 
     driver.quit()
-    return meal_data
+    return saved_meals
+
+
+def save_dietly_to_today():
+    meals = get_dietly()
+    
+    if not meals:
+        logger.warning("No meals found from Dietly")
+        return
+    
+    logger.info("\nDietly meals saved to database!")
+    logger.info("Now select what percentage of each meal you ate today:")
+    
+    for meal in meals:
+        meal_id, name, tag, calories, protein, carbs, fat = meal
+        
+        logger.info(f"\nMeal: {name} ({tag})")
+        logger.info(f"Calories: {calories}kcal, Protein: {protein}g, Carbs: {carbs}g, Fat: {fat}g")
+        
+        while True:
+            try:
+                percentage_input = input("Enter percentage eaten (0-100%, or 'skip' to skip): ").strip().lower()
+                
+                if percentage_input == 'skip':
+                    logger.info(f"Skipped {name}")
+                    break
+                
+                percentage = float(percentage_input.replace('%', ''))
+                
+                if 0 <= percentage <= 100:
+                    if percentage > 0:
+                        add_meal_today_from_dietly(meal_id, percentage)
+                        logger.info(f"Added {percentage}% of {name} to today's meals")
+                    else:
+                        logger.info(f"Skipped {name} (0% eaten)")
+                    break
+                else:
+                    logger.info("Please enter a percentage between 0 and 100")
+                    
+            except ValueError:
+                logger.info("Please enter a valid number or 'skip'")
+    
+    logger.info("Finished adding Dietly meals to today's meals!")
 
 
 if __name__ == "__main__":
     logger.info("test_file")
-    get_dietly()
+    save_dietly_to_today()

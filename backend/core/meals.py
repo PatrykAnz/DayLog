@@ -1,5 +1,5 @@
 from datetime import datetime
-from backend.api.dietly import get_dietly
+from backend.api.dietly import get_dietly, save_dietly_to_today
 from common.data_operations import load_json_data, save_json_data
 from common.logging_config import logger
 from common.print_helpers import print_separator
@@ -11,6 +11,8 @@ from common.database import (
     update_meal_in_table,
     get_meal_by_id,
     delete_meal_from_table,
+    execute_query,
+    get_all_dietly_meals,
 )
 
 
@@ -396,35 +398,204 @@ def create_meal_today():
 
     meal_id, name, tag, description, calories, protein, carbs, fat, mass = selected_meal
 
+    # Get percentage eaten
     while True:
         try:
-            if tag == "100g":
-                quantity = float(input("Enter quantity in grams: "))
-                quantity_unit = "grams"
-            elif tag == "Meal":
-                quantity = float(input("Enter number of meals: "))
-                quantity_unit = "meals"
+            percentage_input = input("Enter percentage eaten (0-100%): ").strip()
+            percentage = float(percentage_input.replace('%', ''))
+            
+            if 0 <= percentage <= 100:
+                if percentage > 0:
+                    # Calculate actual consumed values
+                    actual_calories = calories * percentage / 100
+                    actual_protein = protein * percentage / 100
+                    actual_carbs = carbs * percentage / 100
+                    actual_fat = fat * percentage / 100
+                    
+                    # Add to meals_today table with actual values
+                    execute_query(
+                        """INSERT INTO meals_today 
+                           (meal_id, meal_source, name, tag, calories, protein_grams, carbohydrates_grams, fat_grams, percentage) 
+                           VALUES (?, 'manual', ?, ?, ?, ?, ?, ?, ?)""",
+                        (meal_id, name, tag, actual_calories, actual_protein, actual_carbs, actual_fat, percentage)
+                    )
+                    
+                    logger.info(f"Added {percentage}% of {name} ({tag}) to today's meals!")
+                    logger.info(f"Consumed: {actual_calories:.1f} kcal, {actual_protein:.1f}g protein, {actual_carbs:.1f}g carbs, {actual_fat:.1f}g fat")
+                else:
+                    logger.info(f"Skipped {name} (0% eaten)")
+                break
             else:
-                quantity = float(input("Enter quantity: "))
-                quantity_unit = "portions"
-            break
+                logger.info("Please enter a percentage between 0 and 100")
         except ValueError:
             logger.info("Please enter a valid number!")
 
-    # TODO: Add meal to meals_today table
-    logger.info(f"Added {quantity} {quantity_unit} of {name} ({tag}) to today's meals!")
-
 
 def read_meal_today():
-    print("test")
+    """Read today's eaten meals from the database"""
+    today_meals = execute_query("""
+        SELECT id, meal_id, meal_source, name, tag, calories, protein_grams, carbohydrates_grams, fat_grams, time, percentage
+        FROM meals_today
+        WHERE DATE(time) = DATE('now')
+        ORDER BY time DESC
+    """)
+    
+    if not today_meals:
+        logger.warning("No meals eaten today")
+        return
+    
+    print_separator()
+    logger.info("TODAY'S EATEN MEALS:")
+    print_separator()
+    
+    total_calories = 0
+    total_protein = 0
+    total_carbs = 0
+    total_fat = 0
+    
+    for meal in today_meals:
+        entry_id, meal_id, source, name, tag, calories, protein, carbs, fat, time, percentage = meal
+        
+        total_calories += calories
+        total_protein += protein
+        total_carbs += carbs
+        total_fat += fat
+        
+        logger.info(f"Entry ID: {entry_id}")
+        logger.info(f"Meal: {name} ({tag})")
+        logger.info(f"Source: {source}")
+        logger.info(f"Time: {time}")
+        logger.info(f"Percentage eaten: {percentage}%")
+        logger.info(f"Consumed:")
+        logger.info(f"  Calories: {calories:.1f} kcal")
+        logger.info(f"  Protein: {protein:.1f}g")
+        logger.info(f"  Carbs: {carbs:.1f}g")
+        logger.info(f"  Fat: {fat:.1f}g")
+        print_separator()
+    
+    logger.info("DAILY TOTALS:")
+    logger.info(f"Total Calories: {total_calories:.1f} kcal")
+    logger.info(f"Total Protein: {total_protein:.1f}g")
+    logger.info(f"Total Carbs: {total_carbs:.1f}g")
+    logger.info(f"Total Fat: {total_fat:.1f}g")
+    print_separator()
 
 
 def update_meal_today():
-    print("test")
+    """Update a meal entry for today"""
+    today_meals = execute_query("""
+        SELECT mt.id, mt.meal_id, mt.meal_source, mt.time, mt.percentage,
+               CASE 
+                   WHEN mt.meal_source = 'dietly' THEN d.name
+                   ELSE m.name
+               END as meal_name
+        FROM meals_today mt
+        LEFT JOIN meals m ON mt.meal_id = m.id AND mt.meal_source = 'manual'
+        LEFT JOIN dietly d ON mt.meal_id = d.id AND mt.meal_source = 'dietly'
+        WHERE DATE(mt.time) = DATE('now')
+        ORDER BY mt.time DESC
+    """)
+    
+    if not today_meals:
+        logger.warning("No meals eaten today to update")
+        return
+    
+    logger.info("Select which meal entry to update:")
+    print_separator()
+    
+    for meal in today_meals:
+        entry_id, meal_id, source, time, percentage, name = meal
+        logger.info(f"Entry ID: {entry_id}")
+        logger.info(f"Meal: {name} ({source})")
+        logger.info(f"Time: {time}")
+        logger.info(f"Current percentage: {percentage}%")
+        print_separator()
+    
+    try:
+        entry_id_to_update = int(input("Enter entry ID to update (0 to cancel): "))
+        if entry_id_to_update == 0:
+            return
+        
+        # Check if entry exists
+        entry_exists = any(meal[0] == entry_id_to_update for meal in today_meals)
+        if not entry_exists:
+            logger.warning("Entry ID not found!")
+            return
+        
+        while True:
+            try:
+                new_percentage = float(input("Enter new percentage (0-100%): ").replace('%', ''))
+                if 0 <= new_percentage <= 100:
+                    execute_query(
+                        "UPDATE meals_today SET percentage = ?, quantity = ? WHERE id = ?",
+                        (new_percentage, new_percentage/100.0, entry_id_to_update)
+                    )
+                    logger.info(f"Updated entry to {new_percentage}%")
+                    break
+                else:
+                    logger.info("Please enter a percentage between 0 and 100")
+            except ValueError:
+                logger.info("Please enter a valid number")
+                
+    except ValueError:
+        logger.error("Please enter a valid number!")
 
 
 def delete_meal_today():
-    print("test")
+    """Delete a meal entry from today"""
+    today_meals = execute_query("""
+        SELECT mt.id, mt.meal_id, mt.meal_source, mt.time, mt.percentage,
+               CASE 
+                   WHEN mt.meal_source = 'dietly' THEN d.name
+                   ELSE m.name
+               END as meal_name
+        FROM meals_today mt
+        LEFT JOIN meals m ON mt.meal_id = m.id AND mt.meal_source = 'manual'
+        LEFT JOIN dietly d ON mt.meal_id = d.id AND mt.meal_source = 'dietly'
+        WHERE DATE(mt.time) = DATE('now')
+        ORDER BY mt.time DESC
+    """)
+    
+    if not today_meals:
+        logger.warning("No meals eaten today to delete")
+        return
+    
+    logger.info("Select which meal entry to delete:")
+    print_separator()
+    
+    for meal in today_meals:
+        entry_id, meal_id, source, time, percentage, name = meal
+        logger.info(f"Entry ID: {entry_id}")
+        logger.info(f"Meal: {name} ({source})")
+        logger.info(f"Time: {time}")
+        logger.info(f"Percentage: {percentage}%")
+        print_separator()
+    
+    try:
+        entry_id_to_delete = int(input("Enter entry ID to delete (0 to cancel): "))
+        if entry_id_to_delete == 0:
+            return
+        
+        # Check if entry exists
+        entry_exists = any(meal[0] == entry_id_to_delete for meal in today_meals)
+        if not entry_exists:
+            logger.warning("Entry ID not found!")
+            return
+        
+        # Get meal name for confirmation
+        meal_name = next((meal[5] for meal in today_meals if meal[0] == entry_id_to_delete), "Unknown")
+        
+        logger.info(f"\nAre you sure you want to delete the entry for: {meal_name}?")
+        confirmation = input("Type 'yes' to confirm: ").lower()
+        if confirmation != "yes":
+            logger.info("Delete cancelled.")
+            return
+        
+        execute_query("DELETE FROM meals_today WHERE id = ?", (entry_id_to_delete,))
+        logger.info(f"Successfully deleted meal entry!")
+        
+    except ValueError:
+        logger.error("Please enter a valid number!")
 
 
 def get_meals():
@@ -459,7 +630,7 @@ def get_meals():
                 elif user_choice == 4:
                     delete_meal()
                 elif user_choice == 5:
-                    save_json_data(USER_MEALS_FILE, get_dietly())
+                    save_dietly()
                 elif user_choice == 6:
                     create_meal_today()
                 elif user_choice == 7:
@@ -477,4 +648,5 @@ def get_meals():
 
 
 def save_dietly():
-    logger.info("Save_dietly")
+    """Save dietly meals to database and add to today's meals with percentages"""
+    save_dietly_to_today()

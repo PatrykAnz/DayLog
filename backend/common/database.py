@@ -86,9 +86,16 @@ def create_meals_today_table():
     execute_query(
         """CREATE TABLE IF NOT EXISTS meals_today(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            meal_id INT NOT NULL,
+            meal_id INT,
+            meal_source TEXT DEFAULT 'manual',
+            name TEXT NOT NULL,
+            tag TEXT,
+            calories FLOAT,
+            protein_grams FLOAT,
+            carbohydrates_grams FLOAT,
+            fat_grams FLOAT,
             time DATETIME DEFAULT CURRENT_TIMESTAMP,
-            quantity INT DEFAULT 1,
+            percentage FLOAT DEFAULT 100.0,
             FOREIGN KEY (meal_id) REFERENCES meals(id)
         )"""
     )
@@ -172,3 +179,41 @@ def get_database():
     create_tasks_table()
     create_withings_table()
     create_workouts_table()
+
+def add_dietly_meal_to_table(name, tag, calories, protein_grams, carbohydrates_grams, fat_grams):
+    execute_query(
+        "INSERT INTO dietly (name, tag, calories, protein_grams, carbohydrates_grams, fat_grams) VALUES (?, ?, ?, ?, ?, ?)",
+        (name, tag, calories, protein_grams, carbohydrates_grams, fat_grams)
+    )
+
+def check_dietly_meal_exists(name):
+    result = execute_query("SELECT * FROM dietly WHERE name = ?", (name,))
+    return result[0] if result else None
+
+def get_dietly_meal_by_id(meal_id):
+    result = execute_query("SELECT * FROM dietly WHERE id = ?", (meal_id,))
+    return result[0] if result else None
+
+def add_meal_today_from_dietly(dietly_meal_id, percentage):
+    # Get the meal data from dietly table
+    meal_data = get_dietly_meal_by_id(dietly_meal_id)
+    if not meal_data:
+        return
+    
+    meal_id, name, tag, calories, protein, carbs, fat = meal_data
+    
+    # Calculate actual values based on percentage
+    actual_calories = calories * percentage / 100
+    actual_protein = protein * percentage / 100
+    actual_carbs = carbs * percentage / 100
+    actual_fat = fat * percentage / 100
+    
+    execute_query(
+        """INSERT INTO meals_today 
+           (meal_id, meal_source, name, tag, calories, protein_grams, carbohydrates_grams, fat_grams, percentage) 
+           VALUES (?, 'dietly', ?, ?, ?, ?, ?, ?, ?)""",
+        (dietly_meal_id, name, tag, actual_calories, actual_protein, actual_carbs, actual_fat, percentage)
+    )
+
+def get_all_dietly_meals():
+    return execute_query("SELECT * FROM dietly")
