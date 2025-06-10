@@ -3,7 +3,7 @@ from backend.api.dietly import get_dietly, save_dietly_to_today
 from backend.common.data_operations import load_json_data, save_json_data
 from backend.common.logging_config import logger
 from backend.common.print_helpers import print_separator
-from backend.common.config import USER_MEALS_FILE, DATABASE_MEALS_TABLE
+from backend.common.config import DATABASE_MEALS_TABLE
 from backend.common.database import (
     add_meal_to_table,
     check_name_from_table,
