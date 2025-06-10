@@ -22,13 +22,13 @@ def get_garmin() -> dict:
     api = Garmin(email, password)
 
     try:
-        backend.api.login()
+        api.login()
 
         today = datetime.now().strftime("%Y-%m-%d")
         user_data = load_json_data("backend.user_data.json")
 
-        steps_data = backend.api.get_steps_data(today)
-        sleep_data_raw = backend.api.get_sleep_data(today)
+        steps_data = api.get_steps_data(today)
+        sleep_data_raw = api.get_sleep_data(today)
 
         user_data["Garmin"] = {
             "steps": steps_data,

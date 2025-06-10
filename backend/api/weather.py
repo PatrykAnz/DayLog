@@ -1,51 +1,70 @@
 import requests
-from backend.api.geolocation import get_geolocation
-from pathlib import Path
 import json
-from backend.common.data_operations import check_and_create_user_data
+from backend.common.data_operations import ensure_data_folder, load_json_data, save_json_data
 from backend.common.logging_config import logger
 
 
 def get_weather():
-    check_and_create_user_data()
-    data_folder = Path("user_data")
-    data_file = data_folder / "backend.user_data.json"
-
-    with open(data_file, "r") as f:
-        user_data = json.load(f)
-
-    if (
-        "Geolocation" not in user_data
-        or "latitude" not in user_data["Geolocation"]
-        or "longitude" not in user_data["Geolocation"]
-    ):
-        get_geolocation()
-
-        with open(data_file, "r") as f:
-            user_data = json.load(f)
+    ensure_data_folder()
+    user_data = load_json_data("backend.user_data.json")
+    
+    if "Geolocation" not in user_data:
+        logger.warning("No geolocation data found. Please set your location first.")
+        return None
 
     latitude = user_data["Geolocation"]["latitude"]
     longitude = user_data["Geolocation"]["longitude"]
 
-    request = requests.get(
-        f"https://backend.api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current=temperature_2m,weathercode&timezone=auto"
-    )
-    weather_data = request.json()
+    try:
+        weather_url = (
+            f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current=temperature_2m,weathercode&timezone=auto"
+        )
 
-    user_data["Weather"] = {
-        "temperature": weather_data["current"]["temperature_2m"],
-        "weathercode": weather_data["current"]["weathercode"],
-        "time": weather_data["current"]["time"],
-        "units": weather_data["current_units"]["temperature_2m"],
-    }
+        response = requests.get(weather_url)
+        weather_data = response.json()
 
-    with open(data_file, "w") as f:
-        json.dump(user_data, f, indent=4)
+        current = weather_data["current"]
+        temperature = current["temperature_2m"]
+        weather_code = current["weathercode"]
 
-    logger.info(json.dumps(user_data, indent=4))
-    logger.info(f"Weather data saved to {data_file}")
-    
-    return user_data["Weather"]
+        weather_conditions = {
+            0: "Clear sky",
+            1: "Mainly clear",
+            2: "Partly cloudy",
+            3: "Overcast",
+            45: "Fog",
+            48: "Depositing rime fog",
+            51: "Light drizzle",
+            53: "Moderate drizzle",
+            55: "Dense drizzle",
+            61: "Slight rain",
+            63: "Moderate rain",
+            65: "Heavy rain",
+            80: "Slight rain showers",
+            81: "Moderate rain showers",
+            82: "Violent rain showers",
+            95: "Thunderstorm",
+        }
+
+        condition = weather_conditions.get(weather_code, "Unknown")
+
+        logger.info(f"Current temperature: {temperature}°C")
+        logger.info(f"Weather condition: {condition}")
+
+        user_data["Weather"] = {
+            "temperature": temperature,
+            "condition": condition,
+            "weather_code": weather_code,
+        }
+
+        save_json_data("backend.user_data.json", user_data)
+        logger.info("Weather data saved successfully!")
+
+        return user_data["Weather"]
+
+    except Exception as e:
+        logger.error(f"Error fetching weather data: {e}")
+        return None
 
 
 if __name__ == "__main__":
