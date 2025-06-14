@@ -1,225 +1,158 @@
-import datetime
+import os
 import time
-import webbrowser
-from urllib.parse import parse_qs, urlencode, urlparse
-
+import json
+import threading
 import requests
-from common.data_operations import load_json_data, save_json_data
-from common.logging_config import logger
-from common.config import (
-    WITHINGS_TOKEN_FILE as TOKEN_FILE,
-    WITHINGS_CREDS_FILE as CREDS_FILE,
-    USER_DATA_FILE,
-)
+import webbrowser
+from pathlib import Path
+from datetime import datetime
+from urllib.parse import urlencode, parse_qs, urlparse
+from http.server import HTTPServer, BaseHTTPRequestHandler
+from backend.common.database import save_withings_data, save_api_token, get_api_token
+from backend.common.logging_config import logger
 
-AUTH_URL = "https://account.withings.com/oauth2_user/authorize2"
+CREDS_FILE = Path("backend/user_data/withings_creds.json")
+TOKEN_FILE = Path("backend/user_data/withings_token.json")
 TOKEN_URL = "https://wbsapi.withings.net/v2/oauth2"
 API_ENDPOINT = "https://wbsapi.withings.net/measure"
+AUTHORIZE_URL = "https://account.withings.com/oauth2_user/authorize2"
 
+def load_credentials():
+    try:
+        if CREDS_FILE.exists():
+            with open(CREDS_FILE, "r") as f:
+                c = json.load(f)
+            return c.get("client_id"), c.get("client_secret"), c.get("callback_uri")
+    except Exception as e:
+        logger.error(f"cred error: {e}")
+    return os.getenv("WITHINGS_CLIENT_ID"), os.getenv("WITHINGS_CLIENT_SECRET"), "http://localhost:8000/callback"
 
-def get_credentials():
-    creds = load_json_data(CREDS_FILE)
-    if (
-        creds
-        and "client_id" in creds
-        and "client_secret" in creds
-        and "callback_uri" in creds
-    ):
-        return creds
+CLIENT_ID, CLIENT_SECRET, REDIRECT_URI = load_credentials()
 
-    client_id = input("Client ID: ")
-    client_secret = input("Client Secret: ")
-    callback_uri = input("Callback URI: ")
+auth_code = None
 
-    creds = {
-        "client_id": client_id,
-        "client_secret": client_secret,
-        "callback_uri": callback_uri,
-    }
+def handle_callback(port=8000):
+    def handler(self, *args):
+        global auth_code
+        q = parse_qs(urlparse(self.path).query)
+        if "code" in q:
+            auth_code = q["code"][0]
+            self.send_response(200)
+            self.send_header("Content-type", "text/html")
+            self.end_headers()
+            self.wfile.write(b"Auth OK. You can close this window.")
+            threading.Thread(target=self.server.shutdown).start()
+        else:
+            self.send_response(400)
+            self.send_header("Content-type", "text/html")
+            self.end_headers()
+            self.wfile.write(b"Auth failed.")
+    HTTPServer(("localhost", port), type("H", (BaseHTTPRequestHandler,), {"do_GET": handler})).serve_forever()
 
-    save_json_data(CREDS_FILE, creds)
-    return creds
+def save_token(t):
+    t["created"] = int(time.time())
+    TOKEN_FILE.parent.mkdir(exist_ok=True)
+    with open(TOKEN_FILE, "w") as f:
+        json.dump(t, f)
+    exp = datetime.utcfromtimestamp(t["created"] + t.get("expires_in", 3600)).isoformat()
+    save_api_token("withings", t, exp)
 
-
-def exchange_code_for_token(code, creds):
-    token_params = {
+def refresh_token(rf):
+    d = {
         "action": "requesttoken",
-        "client_id": creds["client_id"],
-        "client_secret": creds["client_secret"],
-        "code": code,
-        "grant_type": "authorization_code",
-        "redirect_uri": creds["callback_uri"],
-    }
-
-    response = requests.post(TOKEN_URL, data=token_params)
-
-    if response.status_code == 200:
-        data = response.json()
-        if data.get("status") == 0:
-            token_data = data.get("body", {})
-            token_data["created"] = int(datetime.datetime.now().timestamp())
-            save_json_data(TOKEN_FILE, token_data)
-            return token_data
-
-    logger.error(f"Error getting token: {response.text}")
-    return None
-
-
-def extract_code_from_url(url):
-    parsed_url = urlparse(url)
-    query_params = parse_qs(parsed_url.query)
-    return query_params.get("code", [None])[0]
-
-
-def refresh_token(refresh_token, creds):
-    token_params = {
-        "action": "requesttoken",
-        "client_id": creds["client_id"],
-        "client_secret": creds["client_secret"],
-        "refresh_token": refresh_token,
         "grant_type": "refresh_token",
+        "client_id": CLIENT_ID,
+        "client_secret": CLIENT_SECRET,
+        "refresh_token": rf,
     }
-
-    response = requests.post(TOKEN_URL, data=token_params)
-
-    if response.status_code == 200:
-        data = response.json()
-        if data.get("status") == 0:
-            token_data = data.get("body", {})
-            token_data["created"] = int(datetime.datetime.now().timestamp())
-            save_json_data(TOKEN_FILE, token_data)
-            return token_data
-
-    logger.error("Error refreshing token")
+    resp = requests.post(TOKEN_URL, data=d)
+    if resp.status_code == 200:
+        j = resp.json()
+        if j.get("status") == 0 and "body" in j:
+            b = j["body"]
+            t = {
+                "access_token": b["access_token"],
+                "refresh_token": b["refresh_token"],
+                "expires_in": b.get("expires_in", 3600),
+            }
+            save_token(t)
+            return t
     return None
 
-
-def get_weight_data(token_data):
-
-    creds = get_credentials()
-    current_time = datetime.datetime.now().timestamp()
-
-    if "expires_in" in token_data and current_time >= token_data.get(
-        "created", 0
-    ) + token_data.get("expires_in", 0):
-        token_data = refresh_token(token_data.get("refresh_token"), creds)
-        if not token_data:
-            return None
-
-    weight_params = {
-        "action": "getmeas",
-        "meastype": "1",
-        "category": "1",
-        "startdate": int(datetime.datetime.now().timestamp()) - (30 * 24 * 3600),
-        "enddate": int(datetime.datetime.now().timestamp()),
-        "access_token": token_data["access_token"],
+def start_auth():
+    global auth_code
+    auth_code = None
+    threading.Thread(target=handle_callback, daemon=True).start()
+    time.sleep(1)
+    p = {
+        "response_type": "code",
+        "client_id": CLIENT_ID,
+        "redirect_uri": REDIRECT_URI,
+        "scope": "user.metrics",
+        "state": "daylog_auth",
     }
-
-    response = requests.get(API_ENDPOINT, params=weight_params)
-
-    if response.status_code == 200:
-        data = response.json()
-        if data.get("status") == 0:
-            return data.get("body", {})
-
-    logger.error("Error getting weight data")
+    webbrowser.open(f"{AUTHORIZE_URL}?{urlencode(p)}")
+    s = time.time()
+    while auth_code is None and time.time() - s < 300:
+        time.sleep(1)
+    if auth_code is None:
+        return None
+    d = {
+        "action": "requesttoken",
+        "grant_type": "authorization_code",
+        "client_id": CLIENT_ID,
+        "client_secret": CLIENT_SECRET,
+        "code": auth_code,
+        "redirect_uri": REDIRECT_URI,
+    }
+    resp = requests.post(TOKEN_URL, data=d)
+    if resp.status_code == 200:
+        j = resp.json()
+        if j.get("status") == 0 and "body" in j:
+            b = j["body"]
+            t = {
+                "access_token": b["access_token"],
+                "refresh_token": b["refresh_token"],
+                "expires_in": b.get("expires_in", 3600),
+            }
+            save_token(t)
+            return t
     return None
 
+def load_token():
+    if TOKEN_FILE.exists():
+        with open(TOKEN_FILE, "r") as f:
+            t = json.load(f)
+        if time.time() < t.get("created", 0) + t.get("expires_in", 3600) - 300:
+            return t
+        if "refresh_token" in t:
+            r = refresh_token(t["refresh_token"])
+            if r:
+                return r
+    return start_auth()
 
 def get_withings():
-    token_data = load_json_data(TOKEN_FILE)
-    if token_data and "access_token" in token_data:
-        logger.info("Already authenticated")
-
-        weight_data = get_weight_data(token_data)
-        if weight_data:
-            latest_weight = process_weight_data(weight_data)
-            if latest_weight:
-                save_weight_to_user_data(latest_weight)
-                return latest_weight
+    logger.info("Withings: fetching weight data")
+    if not CLIENT_ID or not CLIENT_SECRET:
+        logger.warning("Withings credentials missing")
+        return {"status": "not_configured"}
+    tok = load_token()
+    if not tok or "access_token" not in tok:
+        logger.error("Withings token unavailable")
         return None
-
-    creds = get_credentials()
-
-    auth_params = {
-        "response_type": "code",
-        "client_id": creds["client_id"],
-        "redirect_uri": creds["callback_uri"],
-        "scope": "user.info,user.metrics",
-        "state": "withings_auth_state",
-    }
-
-    auth_url = f"{AUTH_URL}?{urlencode(auth_params)}"
-
-    webbrowser.open(auth_url)
-
-    callback_url = input("Paste the full callback URL here: ")
-
-    auth_code = extract_code_from_url(callback_url)
-
-    if auth_code:
-        token_data = exchange_code_for_token(auth_code, creds)
-
-        if token_data:
-            logger.info("Authsuccess")
-            return token_data
-        else:
-            logger.error("Access token error")
-            save_json_data(CREDS_FILE, {})
-            return None
+    r = requests.get(
+        f"{API_ENDPOINT}?action=getmeas&meastype=1",
+        headers={"Authorization": f"Bearer {tok['access_token']}"},
+    )
+    if r.status_code == 200:
+        j = r.json()
+        if j.get("status") == 0 and j.get("body", {}).get("measuregrps"):
+            v = j["body"]["measuregrps"][0]["measures"][0]["value"]
+            kg = v / 1000
+            logger.info(f"Withings latest weight: {kg:.1f} kg")
+            save_withings_data(kg)
+            return {"weight": kg}
+        logger.error("Withings: no weight data")
     else:
-        logger.error("Something is wrong with the URL ")
-        return None
-
-
-def process_weight_data(weight_data):
-    if "measuregrps" not in weight_data:
-        logger.warning("No weight measurements found")
-        return None
-
-    measures = weight_data["measuregrps"]
-
-    latest_date = None
-    latest_weight = None
-
-    sorted_measures = sorted(measures, key=lambda x: x.get("date", 0), reverse=True)
-
-    for measure in sorted_measures:
-        date = datetime.datetime.fromtimestamp(measure.get("date", 0))
-        for measure_value in measure.get("measures", []):
-            if measure_value.get("type") == 1:
-                value = measure_value.get("value", 0) * (
-                    10 ** measure_value.get("unit", 0)
-                )
-
-                if latest_date is None:
-                    latest_date = date
-                    latest_weight = value
-
-    if latest_date and latest_weight:
-        return {
-            "date": latest_date.strftime("%Y-%m-%d"),
-            "time": latest_date.strftime("%H:%M:%S"),
-            "weight": round(latest_weight, 2),
-            "units": "kg",
-        }
+        logger.error(f"Withings request failed: {r.text}")
     return None
-
-
-def save_weight_to_user_data(weight_data):
-
-    user_data = load_json_data(USER_DATA_FILE)
-
-    if "Withings" not in user_data:
-        user_data["Withings"] = {}
-
-    user_data["Withings"]["weight"] = weight_data["weight"]
-    user_data["Withings"]["units"] = weight_data["units"]
-    user_data["Withings"]["date"] = weight_data["date"]
-
-    save_json_data(USER_DATA_FILE, user_data)
-    logger.info(f"Saved today's weight: {weight_data['weight']} {weight_data['units']}")
-
-
-if __name__ == "__main__":
-    get_withings()

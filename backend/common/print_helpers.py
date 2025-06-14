@@ -1,5 +1,5 @@
 from os import system, name
-from common.logging_config import logger
+from backend.common.logging_config import logger
 
 def print_separator():
      logger.info("-" * 50)

@@ -1,10 +1,11 @@
 tree.txt
-user_data.json
+backend.user_data.json
 user_data
 .env
 __pycache__
 DOC
-__init__.py
+main.db
 #temporary
 frontend
 app.log
+
