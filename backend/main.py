@@ -4,7 +4,6 @@ from backend.api.garmin import get_garmin
 from backend.api.geolocation import get_geolocation
 from backend.api.weather import get_weather
 from backend.api.withings import get_withings
-from backend.common.data_operations import check_and_create_user_data
 from backend.common.logging_config import logger
 from backend.core.clock import get_clock
 from backend.core.event_calendar import get_calendar
@@ -20,7 +19,9 @@ data_file = data_folder / USER_DATA_FILE
 
 
 def get_user_choice():
-    check_and_create_user_data()
+    # Initialize database instead of checking JSON files
+    get_database()
+    
     choices = {
         1: "Weather",
         2: "Geolocation",

@@ -1,23 +1,23 @@
 import requests
 import json
-from backend.common.data_operations import ensure_data_folder, load_json_data, save_json_data
+from backend.common.database import save_weather_data, execute_query
 from backend.common.logging_config import logger
+from backend.common.config import TABLE_GELOCATION
 
 
 def get_weather():
-    ensure_data_folder()
-    user_data = load_json_data("backend.user_data.json")
+    # Get the latest geolocation data from database
+    geolocation_result = execute_query(f"SELECT latitude, longitude FROM {TABLE_GELOCATION} ORDER BY date DESC LIMIT 1")
     
-    if "Geolocation" not in user_data:
+    if not geolocation_result:
         logger.warning("No geolocation data found. Please set your location first.")
         return None
 
-    latitude = user_data["Geolocation"]["latitude"]
-    longitude = user_data["Geolocation"]["longitude"]
+    latitude, longitude = geolocation_result[0]
 
     try:
         weather_url = (
-            f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current=temperature_2m,weathercode&timezone=auto"
+            f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current=temperature_2m,weathercode,relativehumidity_2m,windspeed_10m&timezone=auto"
         )
 
         response = requests.get(weather_url)
@@ -26,6 +26,8 @@ def get_weather():
         current = weather_data["current"]
         temperature = current["temperature_2m"]
         weather_code = current["weathercode"]
+        humidity = current.get("relativehumidity_2m", 0)
+        wind_speed = current.get("windspeed_10m", 0.0)
 
         weather_conditions = {
             0: "Clear sky",
@@ -50,17 +52,21 @@ def get_weather():
 
         logger.info(f"Current temperature: {temperature}°C")
         logger.info(f"Weather condition: {condition}")
+        logger.info(f"Humidity: {humidity}%")
+        logger.info(f"Wind speed: {wind_speed} km/h")
 
-        user_data["Weather"] = {
+        # Save to database instead of JSON
+        location = f"{latitude}, {longitude}"
+        save_weather_data(location, temperature, condition, humidity, wind_speed, weather_data)
+        logger.info("Weather data saved successfully!")
+
+        return {
             "temperature": temperature,
             "condition": condition,
             "weather_code": weather_code,
+            "humidity": humidity,
+            "wind_speed": wind_speed
         }
-
-        save_json_data("backend.user_data.json", user_data)
-        logger.info("Weather data saved successfully!")
-
-        return user_data["Weather"]
 
     except Exception as e:
         logger.error(f"Error fetching weather data: {e}")

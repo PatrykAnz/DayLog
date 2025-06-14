@@ -1,7 +1,23 @@
 import sqlite3
 import os
+import json
+from datetime import datetime
 
-from backend.common.config import MAIN_DATABASE_PATH
+from backend.common.config import (
+    TABLE_NOTES,
+    TABLE_TASKS,
+    TABLE_CALENDAR,
+    TABLE_WORKOUTS,
+    TABLE_MEALS,
+    TABLE_MEALS_TODAY,
+    TABLE_DIETLY,
+    TABLE_GELOCATION,
+    TABLE_WEATHER,
+    TABLE_GARMIN,
+    TABLE_WITHINGS,
+    TABLE_API_TOKENS,
+    MAIN_DATABASE_PATH
+)
 from backend.common.logging_config import logger
 
 # COMMON USAGE
@@ -27,7 +43,7 @@ def execute_query(query, params=()):
 # CREATE TABLES
 def create_calendar_table():
     execute_query(
-        """CREATE TABLE IF NOT EXISTS calendar(
+        f"""CREATE TABLE IF NOT EXISTS {TABLE_CALENDAR}(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             tag TEXT,
@@ -40,7 +56,7 @@ def create_calendar_table():
 
 def create_dietly_table():
     execute_query(
-        """CREATE TABLE IF NOT EXISTS dietly(
+        f"""CREATE TABLE IF NOT EXISTS {TABLE_DIETLY}(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             tag TEXT,
@@ -53,17 +69,19 @@ def create_dietly_table():
 
 def create_garmin_table():
     execute_query(
-        """CREATE TABLE IF NOT EXISTS garmin(
+        f"""CREATE TABLE IF NOT EXISTS {TABLE_GARMIN}(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
             steps INT,
-            date DATETIME DEFAULT CURRENT_TIMESTAMP
+            sleep INT,
+            awake INT,
+            date DATE DEFAULT CURRENT_DATE,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )"""
     )
 
 def create_meals_table():
     execute_query(
-        """CREATE TABLE IF NOT EXISTS meals(
+        f"""CREATE TABLE IF NOT EXISTS {TABLE_MEALS}(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             tag TEXT,
@@ -75,16 +93,11 @@ def create_meals_table():
             mass_grams INT
         )"""
     )
-    # Add description column to existing tables if it doesn't exist
-    try:
-        execute_query("ALTER TABLE meals ADD COLUMN description TEXT")
-    except:
-        # Column already exists, ignore the error
-        pass
+
 
 def create_meals_today_table():
     execute_query(
-        """CREATE TABLE IF NOT EXISTS meals_today(
+        f"""CREATE TABLE IF NOT EXISTS {TABLE_MEALS_TODAY}(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             meal_id INT,
             meal_source TEXT DEFAULT 'manual',
@@ -96,13 +109,13 @@ def create_meals_today_table():
             fat_grams FLOAT,
             time DATETIME DEFAULT CURRENT_TIMESTAMP,
             grams_consumed FLOAT DEFAULT 0.0,
-            FOREIGN KEY (meal_id) REFERENCES meals(id)
+            FOREIGN KEY (meal_id) REFERENCES {TABLE_MEALS}(id)
         )"""
     )
 
 def create_notes_table():
     execute_query(
-        """CREATE TABLE IF NOT EXISTS notes(
+        f"""CREATE TABLE IF NOT EXISTS {TABLE_NOTES}(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             tag TEXT,
@@ -113,7 +126,7 @@ def create_notes_table():
 
 def create_tasks_table():
     execute_query(
-        """CREATE TABLE IF NOT EXISTS tasks(
+        f"""CREATE TABLE IF NOT EXISTS {TABLE_TASKS}(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             tag TEXT,
@@ -124,22 +137,219 @@ def create_tasks_table():
 
 def create_withings_table():
     execute_query(
-        """CREATE TABLE IF NOT EXISTS withings(
+        f"""CREATE TABLE IF NOT EXISTS {TABLE_WITHINGS}(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            weight FLOAT,
+            date DATE DEFAULT CURRENT_DATE,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )"""
+    )
+
+def create_workouts_table():
+    execute_query(
+        f"""CREATE TABLE IF NOT EXISTS {TABLE_WORKOUTS}(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
-            weight FLOAT,
-            date DATETIME DEFAULT CURRENT_TIMESTAMP
+            tag TEXT,
+            description TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            last_edited DATETIME DEFAULT CURRENT_TIMESTAMP
         )"""
     )
 
-def create_workouts_table():  # TODO later
+def create_weather_data_table():
     execute_query(
-        """CREATE TABLE IF NOT EXISTS workouts(
+        f"""CREATE TABLE IF NOT EXISTS {TABLE_WEATHER}(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL
+            location TEXT,
+            temperature FLOAT,
+            description TEXT,
+            humidity INT,
+            wind_speed FLOAT,
+            weather_data TEXT,
+            date DATE DEFAULT CURRENT_DATE,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )"""
     )
 
+def create_geolocation_data_table():
+    execute_query(
+        f"""CREATE TABLE IF NOT EXISTS {TABLE_GELOCATION}(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            latitude FLOAT,
+            longitude FLOAT,
+            address TEXT,
+            city TEXT,
+            country TEXT,
+            date DATE DEFAULT CURRENT_DATE,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )"""
+    )
+
+def create_api_tokens_table():
+    execute_query(
+        f"""CREATE TABLE IF NOT EXISTS {TABLE_API_TOKENS}(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            service TEXT NOT NULL UNIQUE,
+            token_data TEXT NOT NULL,
+            expires_at DATETIME,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )"""
+    )
+
+# DATABASE OPERATIONS FOR EACH TABLE
+
+# Notes operations
+def add_note_to_db(name, tag):
+    execute_query(
+        f"INSERT INTO {TABLE_NOTES} (name, tag) VALUES (?, ?)",
+        (name, tag)
+    )
+
+def get_all_notes():
+    return execute_query(f"SELECT * FROM {TABLE_NOTES} ORDER BY created_at DESC")
+
+def update_note_in_db(note_id, name, tag):
+    execute_query(
+        f"UPDATE {TABLE_NOTES} SET name = ?, tag = ?, last_edited = CURRENT_TIMESTAMP WHERE id = ?",
+        (name, tag, note_id)
+    )
+
+def delete_note_from_db(note_id):
+    execute_query(f"DELETE FROM {TABLE_NOTES} WHERE id = ?", (note_id,))
+
+# Tasks operations
+def add_task_to_db(name, tag):
+    execute_query(
+        "INSERT INTO tasks (name, tag) VALUES (?, ?)",
+        (name, tag)
+    )
+
+def get_all_tasks():
+    return execute_query("SELECT * FROM tasks ORDER BY created_at DESC")
+
+def update_task_in_db(task_id, name, tag):
+    execute_query(
+        "UPDATE tasks SET name = ?, tag = ?, last_edited = CURRENT_TIMESTAMP WHERE id = ?",
+        (name, tag, task_id)
+    )
+
+def delete_task_from_db(task_id):
+    execute_query("DELETE FROM tasks WHERE id = ?", (task_id,))
+
+# Calendar operations
+def add_calendar_event_to_db(name, tag, description, event_datetime):
+    execute_query(
+        "INSERT INTO calendar (name, tag, description, datetime) VALUES (?, ?, ?, ?)",
+        (name, tag, description, event_datetime)
+    )
+
+def get_all_calendar_events():
+    return execute_query("SELECT * FROM calendar ORDER BY datetime DESC")
+
+def update_calendar_event_in_db(event_id, name, tag, description, event_datetime):
+    execute_query(
+        "UPDATE calendar SET name = ?, tag = ?, description = ?, datetime = ?, last_edit = CURRENT_TIMESTAMP WHERE id = ?",
+        (name, tag, description, event_datetime, event_id)
+    )
+
+def delete_calendar_event_from_db(event_id):
+    execute_query("DELETE FROM calendar WHERE id = ?", (event_id,))
+
+# Workouts operations
+def add_workout_to_db(name, tag, description):
+    execute_query(
+        "INSERT INTO workouts (name, tag, description) VALUES (?, ?, ?)",
+        (name, tag, description)
+    )
+
+def get_all_workouts():
+    return execute_query("SELECT * FROM workouts ORDER BY created_at DESC")
+
+def update_workout_in_db(workout_id, name, tag, description):
+    execute_query(
+        "UPDATE workouts SET name = ?, tag = ?, description = ?, last_edited = CURRENT_TIMESTAMP WHERE id = ?",
+        (name, tag, description, workout_id)
+    )
+
+def delete_workout_from_db(workout_id):
+    execute_query("DELETE FROM workouts WHERE id = ?", (workout_id,))
+
+# API Data operations
+def save_garmin_data(steps, sleep, awake):
+    # Check if data for today already exists
+    today = datetime.now().date()
+    existing = execute_query("SELECT id FROM garmin_data WHERE date = ?", (today,))
+    
+    if existing:
+        execute_query(
+            "UPDATE garmin_data SET steps = ?, sleep = ?, awake = ? WHERE date = ?",
+            (steps, sleep, awake, today)
+        )
+    else:
+        execute_query(
+            "INSERT INTO garmin_data (steps, sleep, awake, date) VALUES (?, ?, ?, ?)",
+            (steps, sleep, awake, today)
+        )
+
+def get_latest_garmin_data():
+    result = execute_query("SELECT * FROM garmin_data ORDER BY date DESC LIMIT 1")
+    return result[0] if result else None
+
+def save_withings_data(weight):
+    today = datetime.now().date()
+    existing = execute_query("SELECT id FROM withings_data WHERE date = ?", (today,))
+    
+    if existing:
+        execute_query(
+            "UPDATE withings_data SET weight = ? WHERE date = ?",
+            (weight, today)
+        )
+    else:
+        execute_query(
+            "INSERT INTO withings_data (weight, date) VALUES (?, ?)",
+            (weight, today)
+        )
+
+def get_latest_withings_data():
+    result = execute_query("SELECT * FROM withings_data ORDER BY date DESC LIMIT 1")
+    return result[0] if result else None
+
+def save_weather_data(location, temperature, description, humidity, wind_speed, weather_data):
+    today = datetime.now().date()
+    execute_query(
+        "INSERT INTO weather_data (location, temperature, description, humidity, wind_speed, weather_data, date) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (location, temperature, description, humidity, wind_speed, json.dumps(weather_data), today)
+    )
+
+def save_geolocation_data(latitude, longitude, address, city, country):
+    today = datetime.now().date()
+    execute_query(
+        "INSERT INTO geolocation_data (latitude, longitude, address, city, country, date) VALUES (?, ?, ?, ?, ?, ?)",
+        (latitude, longitude, address, city, country, today)
+    )
+
+def save_api_token(service, token_data, expires_at=None):
+    existing = execute_query("SELECT id FROM api_tokens WHERE service = ?", (service,))
+    
+    if existing:
+        execute_query(
+            "UPDATE api_tokens SET token_data = ?, expires_at = ?, updated_at = CURRENT_TIMESTAMP WHERE service = ?",
+            (json.dumps(token_data), expires_at, service)
+        )
+    else:
+        execute_query(
+            "INSERT INTO api_tokens (service, token_data, expires_at) VALUES (?, ?, ?)",
+            (service, json.dumps(token_data), expires_at)
+        )
+
+def get_api_token(service):
+    result = execute_query("SELECT token_data, expires_at FROM api_tokens WHERE service = ?", (service,))
+    if result:
+        token_data, expires_at = result[0]
+        return json.loads(token_data), expires_at
+    return None, None
 
 def add_meal_to_table(name, tag, description, calories, protein_grams, carbohydrates_grams, fat_grams, mass_grams):
     execute_query(
@@ -179,6 +389,9 @@ def get_database():
     create_tasks_table()
     create_withings_table()
     create_workouts_table()
+    create_weather_data_table()
+    create_geolocation_data_table()
+    create_api_tokens_table()
 
 def add_dietly_meal_to_table(name, tag, calories, protein_grams, carbohydrates_grams, fat_grams):
     execute_query(

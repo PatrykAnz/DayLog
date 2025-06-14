@@ -1,8 +1,8 @@
 import datetime
-from backend.common.data_operations import load_json_data, save_json_data
+from backend.common.database import add_calendar_event_to_db, get_all_calendar_events, update_calendar_event_in_db, delete_calendar_event_from_db
 from backend.common.print_helpers import print_separator, cls
 from backend.common.logging_config import logger
-from backend.common.config import USER_CALENDAR_FILE
+from backend.common.config import TABLE_CALENDAR
 
 def get_calendar():
     choices = {
@@ -42,64 +42,40 @@ def get_calendar():
             print_separator() 
 
 def create_calendar_event():
-    calendar_data = load_json_data(USER_CALENDAR_FILE)
-    
-    if calendar_data is None:
-        calendar_data = []
-    
     event_name = input("Event name: ")
     event_tag = input("Tag (You can skip it): ")
-    
     
     current_datetime = datetime.datetime.now()
     
     logger.info("\nEvent date (press Enter to use today's date):")
     
-    
     year_input = input(f"Year (YYYY) [{current_datetime.year}]: ")
     year = current_datetime.year if year_input == '' else int(year_input)
     
-    
     month_input = input(f"Month (1-12) [{current_datetime.month}]: ")
     month = current_datetime.month if month_input == '' else int(month_input)
-    
     
     day_input = input(f"Day (1-31) [{current_datetime.day}]: ")
     day = current_datetime.day if day_input == '' else int(day_input)
     
     logger.info("\nEvent time (press Enter to use current time):")
     
-    
     hour_input = input(f"Hour (0-23) [{current_datetime.hour}]: ")
     hour = current_datetime.hour if hour_input == '' else int(hour_input)
-    
     
     minute_input = input(f"Minute (0-59) [{current_datetime.minute}]: ")
     minute = current_datetime.minute if minute_input == '' else int(minute_input)
     
     description = input("Event description: ")
     
-    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-    
     event_datetime = datetime.datetime(year, month, day, hour, minute)
-    event_date_formatted = event_datetime.strftime("%Y-%m-%d")
-    event_time_formatted = event_datetime.strftime("%H:%M")
     
-    new_event = {
-        "name": event_name,
-        "date": event_date_formatted,
-        "time": event_time_formatted,
-        "tag": event_tag,
-        "description": description,
-        "created_at": current_time,
-        "last_edited": current_time
-    }
-    
-    calendar_data.append(new_event)
-    save_json_data(USER_CALENDAR_FILE, calendar_data)
+    # Save to database instead of JSON
+    add_calendar_event_to_db(event_name, event_tag, description, event_datetime)
+    logger.info(f"Event '{event_name}' created successfully!")
 
 def read_calendar_events():
-    calendar_data = load_json_data(USER_CALENDAR_FILE)
+    calendar_data = get_all_calendar_events()
     
     if not calendar_data:
         logger.warning("No events found")
@@ -108,19 +84,19 @@ def read_calendar_events():
     logger.info("\nEvents:")
     print_separator()
     for i, event in enumerate(calendar_data, 1):
+        event_id, name, tag, description, event_datetime, created_at, last_edit = event
         logger.info(f"\nEvent #{i}")
-        logger.info(f"Name: {event['name']}")
-        logger.info(f"Date: {event.get('date', 'Not specified')}")
-        logger.info(f"Time: {event.get('time', 'Not specified')}")
-        logger.info(f"Tag: {event['tag']}")
-        logger.info(f"Description: {event.get('description', 'None')}")
-        logger.info(f"Created: {event['created_at']}")
-        logger.info(f"Last Edited: {event['last_edited']}")
+        logger.info(f"Name: {name}")
+        logger.info(f"Date/Time: {event_datetime}")
+        logger.info(f"Tag: {tag}")
+        logger.info(f"Description: {description or 'None'}")
+        logger.info(f"Created: {created_at}")
+        logger.info(f"Last Edited: {last_edit}")
         print_separator()
     input(f"Press Enter to return")
 
 def delete_calendar_event():
-    calendar_data = load_json_data(USER_CALENDAR_FILE)
+    calendar_data = get_all_calendar_events()
 
     if not calendar_data:
         logger.warning("No events to delete!")
@@ -129,10 +105,11 @@ def delete_calendar_event():
     logger.info("\nWhich event would you like to delete?")
     print_separator()
     for i, event in enumerate(calendar_data, 1):
+        event_id, name, tag, description, event_datetime, created_at, last_edit = event
         logger.info(f"\nEvent #{i}")
-        logger.info(f"Name: {event['name']}")
-        logger.info(f"Date: {event.get('date', 'Not specified')} {event.get('time', '')}")
-        logger.info(f"Tag: {event['tag']}")
+        logger.info(f"Name: {name}")
+        logger.info(f"Date/Time: {event_datetime}")
+        logger.info(f"Tag: {tag}")
         print_separator()
     
     try:
@@ -142,9 +119,12 @@ def delete_calendar_event():
             return
         
         if 0 <= event_to_delete < len(calendar_data):
-            deleted_event = calendar_data.pop(event_to_delete)
-            logger.info(f"\nDeleted event: {deleted_event['name']}")
-            save_json_data(USER_CALENDAR_FILE, calendar_data)
+            selected_event = calendar_data[event_to_delete]
+            event_id, name, tag, description, event_datetime, created_at, last_edit = selected_event
+            
+            # Delete from database instead of JSON
+            delete_calendar_event_from_db(event_id)
+            logger.info(f"\nDeleted event: {name}")
         else:
             logger.warning("Invalid event number!")
     
@@ -152,7 +132,7 @@ def delete_calendar_event():
         logger.error("Please enter a valid number!")
 
 def update_calendar_event():
-    calendar_data = load_json_data(USER_CALENDAR_FILE)
+    calendar_data = get_all_calendar_events()
 
     if not calendar_data:
         logger.warning("No events to update!")
@@ -161,10 +141,11 @@ def update_calendar_event():
     logger.info("\nWhich event would you like to update?")
     print_separator()
     for i, event in enumerate(calendar_data, 1):
+        event_id, name, tag, description, event_datetime, created_at, last_edit = event
         logger.info(f"\nEvent #{i}")
-        logger.info(f"Name: {event['name']}")
-        logger.info(f"Date: {event.get('date', 'Not specified')} {event.get('time', '')}")
-        logger.info(f"Tag: {event['tag']}")
+        logger.info(f"Name: {name}")
+        logger.info(f"Date/Time: {event_datetime}")
+        logger.info(f"Tag: {tag}")
         print_separator()
     
     try:
@@ -174,34 +155,31 @@ def update_calendar_event():
             return
         
         if 0 <= event_to_update < len(calendar_data):
-            event = calendar_data[event_to_update]
+            selected_event = calendar_data[event_to_update]
+            event_id, current_name, current_tag, current_description, current_datetime, created_at, last_edit = selected_event
             
             logger.info("\nEnter new information (press Enter to keep current value):")
             
-            new_name = input(f"New name [{event['name']}]: ") or event['name']
+            new_name = input(f"New name [{current_name}]: ") or current_name
+            new_tag = input(f"New tag [{current_tag}]: ") or current_tag
+            new_desc = input(f"New description [{current_description or 'None'}]: ") or current_description
             
-            date_str = event.get('date', 'Not set')
-            new_date = input(f"New date [{date_str}] (YYYY-MM-DD): ") or date_str
+            # For simplicity, ask for new datetime as a string (YYYY-MM-DD HH:MM format)
+            new_datetime_str = input(f"New date/time [{current_datetime}] (YYYY-MM-DD HH:MM): ") or current_datetime
             
-            time_str = event.get('time', 'Not set')
-            new_time = input(f"New time [{time_str}] (HH:MM): ") or time_str
+            # Parse the datetime string
+            if isinstance(new_datetime_str, str) and new_datetime_str != current_datetime:
+                try:
+                    new_datetime = datetime.datetime.strptime(new_datetime_str, "%Y-%m-%d %H:%M")
+                except ValueError:
+                    logger.warning("Invalid datetime format. Keeping current datetime.")
+                    new_datetime = current_datetime
+            else:
+                new_datetime = current_datetime
             
-            new_tag = input(f"New tag [{event['tag']}]: ") or event['tag']
-            
-            desc_str = event.get('description', 'None')
-            new_desc = input(f"New description [{desc_str}]: ") or desc_str
-            
-            calendar_data[event_to_update].update({
-                "name": new_name,
-                "date": new_date,
-                "time": new_time,
-                "tag": new_tag,
-                "description": new_desc,
-                "last_edited": datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-            })
-            
+            # Update in database instead of JSON
+            update_calendar_event_in_db(event_id, new_name, new_tag, new_desc, new_datetime)
             logger.info(f"\nUpdated event: {new_name}")
-            save_json_data(USER_CALENDAR_FILE, calendar_data)
         else:
             logger.warning("Invalid event number!")
     
@@ -209,26 +187,18 @@ def update_calendar_event():
         logger.error("Please enter a valid number!")
 
 def display_upcoming_events(days=7):
-    calendar_data = load_json_data(USER_CALENDAR_FILE)
-    
-    if not calendar_data:
-        return []
+    from backend.common.database import execute_query
     
     today = datetime.datetime.now().date()
     end_date = today + datetime.timedelta(days=days)
     
-    upcoming = []
+    # Query upcoming events from database
+    upcoming_events = execute_query(
+        f"SELECT * FROM {TABLE_CALENDAR} WHERE date(datetime) BETWEEN ? AND ? ORDER BY datetime",
+        (today, end_date)
+    )
     
-    for event in calendar_data:
-        if 'date' in event:
-            try:
-                event_date = datetime.datetime.strptime(event['date'], "%Y-%m-%d").date()
-                if today <= event_date <= end_date:
-                    upcoming.append(event)
-            except ValueError:
-                pass
-    
-    return sorted(upcoming, key=lambda x: x['date'])
+    return upcoming_events
 
 
     

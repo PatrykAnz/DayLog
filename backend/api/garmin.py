@@ -4,7 +4,7 @@ from garminconnect import Garmin
 from pathlib import Path
 from dotenv import load_dotenv
 from backend.common.config import GARMIN_EMAIL, GARMIN_PASSWORD
-from backend.common.data_operations import load_json_data, save_json_data
+from backend.common.database import save_garmin_data
 from datetime import datetime
 from backend.common.logging_config import logger
 
@@ -25,15 +25,9 @@ def get_garmin() -> dict:
         api.login()
 
         today = datetime.now().strftime("%Y-%m-%d")
-        user_data = load_json_data("backend.user_data.json")
 
         steps_data = api.get_steps_data(today)
         sleep_data_raw = api.get_sleep_data(today)
-
-        user_data["Garmin"] = {
-            "steps": steps_data,
-            "sleep": sleep_data_raw,
-        }
 
         # Calculate total steps
         if steps_data:
@@ -61,8 +55,8 @@ def get_garmin() -> dict:
         logger.info(f"Total Sleep: {total_sleep} seconds ({total_sleep/3600:.2f} hours)")
         logger.info(f"Total Awake: {total_awake} seconds ({total_awake/3600:.2f} hours)")
         
-        user_data["Garmin"] = aggregated_data
-        save_json_data("backend.user_data.json", user_data)
+        # Save to database instead of JSON
+        save_garmin_data(total_steps, total_sleep, total_awake)
         
         return aggregated_data
 

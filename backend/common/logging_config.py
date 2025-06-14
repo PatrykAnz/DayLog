@@ -2,8 +2,8 @@ import logging
 import sys
 from pathlib import Path
 
-# Create logs directory if it doesn't exist
-logs_dir = Path("logs")
+# Create logs directory in backend if it doesn't exist
+logs_dir = Path(__file__).parent.parent / "logs"
 logs_dir.mkdir(exist_ok=True)
 
 # Configure logging

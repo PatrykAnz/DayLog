@@ -41,6 +41,19 @@ REQUIRED_ENVS = {
     "GARMIN_PASSWORD": GARMIN_PASSWORD,
 }
 
+# Table names
+TABLE_NOTES = "notes"
+TABLE_TASKS = "tasks"
+TABLE_CALENDAR = "calendar"
+TABLE_WORKOUTS = "workouts"
+TABLE_MEALS = "meals"
+TABLE_MEALS_TODAY = "meals_today"
+TABLE_DIETLY = "dietly"
+TABLE_GELOCATION = "geolocation_data"
+TABLE_WEATHER = "weather_data"
+TABLE_GARMIN = "garmin_data"
+TABLE_WITHINGS = "withings_data"
+TABLE_API_TOKENS = "api_tokens"
 
 def check_required_envs():
     """Log warnings if required environment variables are missing."""

@@ -1,8 +1,7 @@
 import datetime
 from backend.common.print_helpers import print_separator
-from backend.common.data_operations import load_json_data, save_json_data
+from backend.common.database import add_task_to_db, get_all_tasks, update_task_in_db, delete_task_from_db
 from backend.common.logging_config import logger
-from backend.common.config import USER_TASKS_FILE 
 
 def get_tasks():
     choices = {0: "Exit", 1: "Create", 2: "Read", 3: "Update", 4: "Delete"}
@@ -38,111 +37,99 @@ def get_tasks():
 
 
 def create_tasks():
-    tasks_data = load_json_data(USER_TASKS_FILE)
-    task_name = input("Note name: ")
-    new_note_tag = input("Tag (You can skip it): ")
-    new_note_create_date = datetime.datetime.now()
+    task_name = input("Task name: ")
+    new_task_tag = input("Tag (You can skip it): ")
 
-    new_note = {
-        "name": task_name,
-        "tag": new_note_tag,
-        "created_at": new_note_create_date.strftime("%Y-%m-%d %H:%M"),
-        "last_edited": new_note_create_date.strftime("%Y-%m-%d %H:%M"),
-    }
-    tasks_data.append(new_note)
-
-    save_json_data(USER_TASKS_FILE, tasks_data)
+    # Save to database instead of JSON
+    add_task_to_db(task_name, new_task_tag)
+    logger.info(f"Task '{task_name}' created successfully!")
 
 
 def read_tasks():
-    tasks_data = load_json_data(USER_TASKS_FILE)
+    tasks_data = get_all_tasks()
 
     if not tasks_data:
         logger.warning("No tasks found")
         return
 
-    logger.info("\ntasks:")
+    logger.info("\nTasks:")
     print_separator()
-    for i, note in enumerate(tasks_data, 1):
-        logger.info(f"\nNote #{i}")
-        logger.info(f"Name: {note['name']}")
-        logger.info(f"Tag: {note['tag']}")
-        logger.info(f"Created: {note['created_at']}")
-        logger.info(f"Last Edited: {note['last_edited']}")
+    for i, task in enumerate(tasks_data, 1):
+        task_id, name, tag, created_at, last_edited = task
+        logger.info(f"\nTask #{i}")
+        logger.info(f"Name: {name}")
+        logger.info(f"Tag: {tag}")
+        logger.info(f"Created: {created_at}")
+        logger.info(f"Last Edited: {last_edited}")
         print_separator()
     input(f"Press Enter to return")
 
 
 def update_tasks():
-    tasks_data = load_json_data(USER_TASKS_FILE)
+    tasks_data = get_all_tasks()
 
     if not tasks_data:
         logger.warning("No tasks to update!")
         return
 
-    logger.info("\nWhich note would you like to update?")
+    logger.info("\nWhich task would you like to update?")
     print_separator()
-    for i, note in enumerate(tasks_data, 1):
-        logger.info(f"\nNote #{i}")
-        logger.info(f"Name: {note['name']}")
-        logger.info(f"Tag: {note['tag']}")
+    for i, task in enumerate(tasks_data, 1):
+        task_id, name, tag, created_at, last_edited = task
+        logger.info(f"\nTask #{i}")
+        logger.info(f"Name: {name}")
+        logger.info(f"Tag: {tag}")
         print_separator()
 
     try:
-        note_to_update = int(input("Enter note number to update (0 to cancel): ")) - 1
-        if note_to_update == -1:
+        task_to_update = int(input("Enter task number to update (0 to cancel): ")) - 1
+        if task_to_update == -1:
             return
-        if 0 <= note_to_update < len(tasks_data):
+        if 0 <= task_to_update < len(tasks_data):
+            selected_task = tasks_data[task_to_update]
+            task_id, current_name, current_tag, created_at, last_edited = selected_task
+            
             logger.info("\nEnter new information (press Enter to keep current value):")
-            new_name = (
-                input(f"New name [{tasks_data[note_to_update]['name']}]: ")
-                or tasks_data[note_to_update]["name"]
-            )
-            new_tag = (
-                input(f"New tag [{tasks_data[note_to_update]['tag']}]: ")
-                or tasks_data[note_to_update]["tag"]
-            )
+            new_name = input(f"New name [{current_name}]: ") or current_name
+            new_tag = input(f"New tag [{current_tag}]: ") or current_tag
 
-            tasks_data[note_to_update].update(
-                {
-                    "name": new_name,
-                    "tag": new_tag,
-                    "last_edited": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
-                }
-            )
-
-            logger.info(f"\nUpdated note: {new_name}")
-            save_json_data(USER_TASKS_FILE, tasks_data)
+            # Update in database instead of JSON
+            update_task_in_db(task_id, new_name, new_tag)
+            logger.info(f"\nUpdated task: {new_name}")
         else:
-            logger.warning("Invalid note number!")
+            logger.warning("Invalid task number!")
     except ValueError:
         logger.error("Please enter a valid number!")
 
 
 def delete_tasks():
-    tasks_data = load_json_data(USER_TASKS_FILE)
+    tasks_data = get_all_tasks()
 
     if not tasks_data:
         logger.warning("No tasks to delete!")
         return
 
-    logger.info("\nWhich note would you like to delete?")
+    logger.info("\nWhich task would you like to delete?")
     print_separator()
-    for i, note in enumerate(tasks_data, 1):
-        logger.info(f"\nNote #{i}")
-        logger.info(f"Name: {note['name']}")
-        logger.info(f"Tag: {note['tag']}")
+    for i, task in enumerate(tasks_data, 1):
+        task_id, name, tag, created_at, last_edited = task
+        logger.info(f"\nTask #{i}")
+        logger.info(f"Name: {name}")
+        logger.info(f"Tag: {tag}")
         print_separator()
 
     try:
-        note_to_delete = int(input("Enter note number to delete (0 to cancel): ")) - 1
-        if note_to_delete == -1:
+        task_to_delete = int(input("Enter task number to delete (0 to cancel): ")) - 1
+        if task_to_delete == -1:
             return
-        if 0 <= note_to_delete < len(tasks_data):
-            deleted_note = tasks_data.pop(note_to_delete)
-            logger.info(f"\nDeleted note: {deleted_note['name']}")
-            save_json_data(USER_TASKS_FILE, tasks_data)
+        if 0 <= task_to_delete < len(tasks_data):
+            selected_task = tasks_data[task_to_delete]
+            task_id, name, tag, created_at, last_edited = selected_task
+            
+            # Delete from database instead of JSON
+            delete_task_from_db(task_id)
+            logger.info(f"\nDeleted task: {name}")
         else:
-            logger.warning("Invalid note number!")
+            logger.warning("Invalid task number!")
     except ValueError:
         logger.error("Please enter a valid number!")

@@ -1,9 +1,8 @@
 import datetime
 
-from backend.common.data_operations import load_json_data, save_json_data
+from backend.common.database import add_note_to_db, get_all_notes, update_note_in_db, delete_note_from_db
 from backend.common.logging_config import logger
 from backend.common.print_helpers import print_separator
-from backend.common.config import USER_NOTES_FILE
 
 
 def get_notes():
@@ -40,24 +39,16 @@ def get_notes():
 
 
 def create_notes():
-    notes_data = load_json_data(USER_NOTES_FILE)
     note_name = input("Note name: ")
     new_note_tag = input("Tag (You can skip it): ")
-    new_note_create_date = datetime.datetime.now()
 
-    new_note = {
-        "name": note_name,
-        "tag": new_note_tag,
-        "created_at": new_note_create_date.strftime("%Y-%m-%d %H:%M"),
-        "last_edited": new_note_create_date.strftime("%Y-%m-%d %H:%M"),
-    }
-    notes_data.append(new_note)
-
-    save_json_data(USER_NOTES_FILE, notes_data)
+    # Save to database instead of JSON
+    add_note_to_db(note_name, new_note_tag)
+    logger.info(f"Note '{note_name}' created successfully!")
 
 
 def read_notes():
-    notes_data = load_json_data(USER_NOTES_FILE)
+    notes_data = get_all_notes()
 
     if not notes_data:
         logger.warning("No notes found")
@@ -66,17 +57,18 @@ def read_notes():
     logger.info("\nNotes:")
     print_separator()
     for i, note in enumerate(notes_data, 1):
+        note_id, name, tag, created_at, last_edited = note
         logger.info(f"\nNote #{i}")
-        logger.info(f"Name: {note['name']}")
-        logger.info(f"Tag: {note['tag']}")
-        logger.info(f"Created: {note['created_at']}")
-        logger.info(f"Last Edited: {note['last_edited']}")
+        logger.info(f"Name: {name}")
+        logger.info(f"Tag: {tag}")
+        logger.info(f"Created: {created_at}")
+        logger.info(f"Last Edited: {last_edited}")
         print_separator()
     input(f"Press Enter to return")
 
 
 def update_notes():
-    notes_data = load_json_data(USER_NOTES_FILE)
+    notes_data = get_all_notes()
 
     if not notes_data:
         logger.warning("No notes to update!")
@@ -85,9 +77,10 @@ def update_notes():
     logger.info("\nWhich note would you like to update?")
     print_separator()
     for i, note in enumerate(notes_data, 1):
+        note_id, name, tag, created_at, last_edited = note
         logger.info(f"\nNote #{i}")
-        logger.info(f"Name: {note['name']}")
-        logger.info(f"Tag: {note['tag']}")
+        logger.info(f"Name: {name}")
+        logger.info(f"Tag: {tag}")
         print_separator()
 
     try:
@@ -95,26 +88,16 @@ def update_notes():
         if note_to_update == -1:
             return
         if 0 <= note_to_update < len(notes_data):
+            selected_note = notes_data[note_to_update]
+            note_id, current_name, current_tag, created_at, last_edited = selected_note
+            
             logger.info("\nEnter new information (press Enter to keep current value):")
-            new_name = (
-                input(f"New name [{notes_data[note_to_update]['name']}]: ")
-                or notes_data[note_to_update]["name"]
-            )
-            new_tag = (
-                input(f"New tag [{notes_data[note_to_update]['tag']}]: ")
-                or notes_data[note_to_update]["tag"]
-            )
+            new_name = input(f"New name [{current_name}]: ") or current_name
+            new_tag = input(f"New tag [{current_tag}]: ") or current_tag
 
-            notes_data[note_to_update].update(
-                {
-                    "name": new_name,
-                    "tag": new_tag,
-                    "last_edited": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
-                }
-            )
-
+            # Update in database instead of JSON
+            update_note_in_db(note_id, new_name, new_tag)
             logger.info(f"\nUpdated note: {new_name}")
-            save_json_data(USER_NOTES_FILE, notes_data)
         else:
             logger.warning("Invalid note number!")
     except ValueError:
@@ -122,7 +105,7 @@ def update_notes():
 
 
 def delete_notes():
-    notes_data = load_json_data(USER_NOTES_FILE)
+    notes_data = get_all_notes()
 
     if not notes_data:
         logger.warning("No notes to delete!")
@@ -131,9 +114,10 @@ def delete_notes():
     logger.info("\nWhich note would you like to delete?")
     print_separator()
     for i, note in enumerate(notes_data, 1):
+        note_id, name, tag, created_at, last_edited = note
         logger.info(f"\nNote #{i}")
-        logger.info(f"Name: {note['name']}")
-        logger.info(f"Tag: {note['tag']}")
+        logger.info(f"Name: {name}")
+        logger.info(f"Tag: {tag}")
         print_separator()
 
     try:
@@ -141,9 +125,12 @@ def delete_notes():
         if note_to_delete == -1:
             return
         if 0 <= note_to_delete < len(notes_data):
-            deleted_note = notes_data.pop(note_to_delete)
-            logger.info(f"\nDeleted note: {deleted_note['name']}")
-            save_json_data(USER_NOTES_FILE, notes_data)
+            selected_note = notes_data[note_to_delete]
+            note_id, name, tag, created_at, last_edited = selected_note
+            
+            # Delete from database instead of JSON
+            delete_note_from_db(note_id)
+            logger.info(f"\nDeleted note: {name}")
         else:
             logger.warning("Invalid note number!")
     except ValueError:
