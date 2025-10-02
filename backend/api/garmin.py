@@ -64,15 +64,11 @@ def sync_year():
     today = date.today()
 
     for i in range((today - START_DATE).days + 1):
+        day = START_DATE + timedelta(days=i)
         if i % 10 == 0:
             print(f"{i} days done")
-        day = today - timedelta(days=i)
-
-        if day < START_DATE:
-            break
         data = fetch_day_data(client, day.isoformat())
         insert_data(cur, conn, data)
-
     print("Inserted yearly data")
     cur.close()
     conn.close()
