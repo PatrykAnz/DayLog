@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+python-dotenv
+requests
+garminconnect
+geocoder
+selenium
+webdriver-manager
+python-multipart
+pydantic
