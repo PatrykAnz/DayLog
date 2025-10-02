@@ -2,7 +2,7 @@ from garminconnect import Garmin
 from dotenv import load_dotenv
 import os
 from datetime import date, timedelta
-from v2.database.database import init_db, insert_data   # <-- correct import
+from database.database import init_db, insert_data  
 #YEAR MONTH DAY
 START_DATE = date(2025, 6, 1)
 
@@ -79,6 +79,6 @@ def sync_year():
 
 
 if __name__ == "__main__":
-    #sync_yesterday()
-    sync_year()
+    sync_yesterday()
+    #sync_year()
     pass
