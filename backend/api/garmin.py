@@ -1,5 +1,4 @@
 from garminconnect import Garmin
-from dotenv import load_dotenv
 import os
 from datetime import date, timedelta
 from database.database import init_db, insert_data  
@@ -9,7 +8,6 @@ START_DATE = date(2025, 6, 1)
 
 GARMIN_EMAIL, GARMIN_PASSWORD = azure_auth("garmin-email","garmin-password")
 def init_client():
-    load_dotenv()
     client = Garmin(
         GARMIN_EMAIL,
         GARMIN_PASSWORD
@@ -77,4 +75,6 @@ def sync_year():
 
 
 if __name__ == "__main__":
+    sync_yesterday()
+    print(sync_yesterday())
     pass
