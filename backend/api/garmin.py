@@ -3,17 +3,19 @@ from dotenv import load_dotenv
 import os
 from datetime import date, timedelta
 from database.database import init_db, insert_data  
+from auth.azure_auth import azure_auth
 #YEAR MONTH DAY
 START_DATE = date(2025, 6, 1)
 
-
+GARMIN_EMAIL, GARMIN_PASSWORD = azure_auth("garmin-email","garmin-password")
 def init_client():
     load_dotenv()
     client = Garmin(
-        os.getenv("GARMIN_EMAIL"),
-        os.getenv("GARMIN_PASSWORD")
+        GARMIN_EMAIL,
+        GARMIN_PASSWORD
     )
     client.login()
+    print(client)
     return client
 
 
@@ -75,6 +77,4 @@ def sync_year():
 
 
 if __name__ == "__main__":
-    sync_yesterday()
-    #sync_year()
     pass

@@ -1,1 +1,5 @@
 garminconnect
+azure-keyvault-secrets
+azure-identity
+dotenv
+psycopg2
