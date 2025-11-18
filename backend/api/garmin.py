@@ -1,6 +1,6 @@
 from garminconnect import Garmin
 from datetime import date, timedelta
-from database.database import init_db, insert_data  
+from database.database import init_db, insert_data
 from auth.azure_auth import azure_auth
 
 START_DATE = date(2025, 6, 1)
