@@ -1,21 +1,14 @@
 from garminconnect import Garmin
-from dotenv import load_dotenv
-import os
 from datetime import date, timedelta
 from database.database import init_db, insert_data  
 from auth.azure_auth import azure_auth
-#YEAR MONTH DAY
+
 START_DATE = date(2025, 6, 1)
 
-GARMIN_EMAIL, GARMIN_PASSWORD = azure_auth("garmin-email","garmin-password")
 def init_client():
-    load_dotenv()
-    client = Garmin(
-        GARMIN_EMAIL,
-        GARMIN_PASSWORD
-    )
+    garmin_email, garmin_password = azure_auth("garmin-email", "garmin-password")
+    client = Garmin(garmin_email, garmin_password)
     client.login()
-    print(client)
     return client
 
 
@@ -55,7 +48,6 @@ def sync_yesterday():
     yesterday = date.today() - timedelta(days=1)
     data = fetch_day_data(client, yesterday.isoformat())
     insert_data(cur, conn, data)
-    print(f"Inserted yesterday: {yesterday}")
     cur.close()
     conn.close()
 
@@ -67,14 +59,11 @@ def sync_year():
 
     for i in range((today - START_DATE).days + 1):
         day = START_DATE + timedelta(days=i)
-        if i % 10 == 0:
-            print(f"{i} days done")
         data = fetch_day_data(client, day.isoformat())
         insert_data(cur, conn, data)
-    print("Inserted yearly data")
     cur.close()
     conn.close()
 
 
 if __name__ == "__main__":
-    pass
+    sync_yesterday()

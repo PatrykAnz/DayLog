@@ -1,5 +1,4 @@
 garminconnect
 azure-keyvault-secrets
 azure-identity
-dotenv
-psycopg2
+psycopg2-binary
