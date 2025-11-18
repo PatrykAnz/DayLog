@@ -1,54 +1,47 @@
 import psycopg2
 import os
-from dotenv import load_dotenv
-import logging
-
-load_dotenv()
+from auth.azure_auth import get_secret
 
 def init_db():
-    required_env_vars = ["DB_NAME", "DB_USER", "DB_PASSWORD", "DB_HOST", "DB_PORT"]
-    missing_vars = [var for var in required_env_vars if not os.getenv(var)]
-    if missing_vars:
-        logging.error(f"Missing required environment variables for database connection: {', '.join(missing_vars)}")
-        raise RuntimeError("Database configuration error: missing environment variables.")
-    try:
-        conn = psycopg2.connect(
-            dbname=os.getenv("DB_NAME"),
-            user=os.getenv("DB_USER"),
-            password=os.getenv("DB_PASSWORD"),
-            host=os.getenv("DB_HOST"),
-            port=os.getenv("DB_PORT")
+    db_name = get_secret("daylog-db-name")
+    db_user = get_secret("daylog-db-username")
+    db_password = get_secret("daylog-db-password")
+    db_host = os.environ.get("DB_HOST", "daylog-db-cnpg-rw.daylog.svc.cluster.local")
+    db_port = get_secret("daylog-db-port")
+    conn = psycopg2.connect(
+        dbname=db_name,
+        user=db_user,
+        password=db_password,
+        host=db_host,
+        port=db_port
+    )
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS garmin (
+            date DATE PRIMARY KEY,
+            total_steps INT,
+            total_sleep_seconds INT,
+            deep_sleep_seconds INT,
+            light_sleep_seconds INT,
+            rem_sleep_seconds INT,
+            awake_sleep_seconds INT,
+            min_hr INT,
+            rest_hr INT,
+            last7_avg_rest_hr INT,
+            avg_stress INT,
+            stress_duration INT,
+            avg_spo2 FLOAT,
+            min_spo2 FLOAT,
+            last7_avg_spo2 FLOAT,
+            avg_sleep_resp FLOAT,
+            avg_waking_resp FLOAT,
+            body_battery_most_recent INT,
+            body_battery_at_wake INT,
+            body_battery_lowest INT
         )
-        cur = conn.cursor()
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS garmin (
-                date DATE PRIMARY KEY,
-                total_steps INT,
-                total_sleep_seconds INT,
-                deep_sleep_seconds INT,
-                light_sleep_seconds INT,
-                rem_sleep_seconds INT,
-                awake_sleep_seconds INT,
-                min_hr INT,
-                rest_hr INT,
-                last7_avg_rest_hr INT,
-                avg_stress INT,
-                stress_duration INT,
-                avg_spo2 FLOAT,
-                min_spo2 FLOAT,
-                last7_avg_spo2 FLOAT,
-                avg_sleep_resp FLOAT,
-                avg_waking_resp FLOAT,
-                body_battery_most_recent INT,
-                body_battery_at_wake INT,
-                body_battery_lowest INT
-            )
-        """)
-        conn.commit()
-        return conn, cur
-    except Exception as e:
-        logging.error("Failed to connect to the database. Please check your configuration and database server.")
-        raise RuntimeError("Database connection failed.") from e
+    """)
+    conn.commit()
+    return conn, cur
 
 
 def insert_data(cur, conn, data):

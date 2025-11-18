@@ -2,13 +2,16 @@ import os
 from azure.keyvault.secrets import SecretClient
 from azure.identity import DefaultAzureCredential
 
-def azure_auth(secretName,secretPass):
-    keyVaultName = os.environ["KEY_VAULT_NAME"]
-    KVUri = f"https://{keyVaultName}.vault.azure.net"
+_key_vault_name = os.environ["KEY_VAULT_NAME"]
+_kv_uri = f"https://{_key_vault_name}.vault.azure.net"
+_credential = DefaultAzureCredential()
+_client = SecretClient(vault_url=_kv_uri, credential=_credential)
 
-    credential = DefaultAzureCredential()
-    client = SecretClient(vault_url=KVUri, credential=credential)
-    retrieved_secret_name = client.get_secret(secretName).value
-    retrieved_secret_pass = client.get_secret(secretPass).value
-    return(retrieved_secret_name,retrieved_secret_pass)
+def get_secret(secret_name):
+    return _client.get_secret(secret_name).value
+
+def azure_auth(secret_name, secret_pass):
+    retrieved_secret_name = get_secret(secret_name)
+    retrieved_secret_pass = get_secret(secret_pass)
+    return retrieved_secret_name, retrieved_secret_pass
 
