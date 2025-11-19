@@ -9,15 +9,15 @@ def init_db():
     db_host = os.environ.get("DB_HOST", "daylog-db-cnpg-rw.daylog.svc.cluster.local")
     db_port = get_secret("daylog-db-port")
     
-        conn = psycopg2.connect(
+    conn = psycopg2.connect(
         dbname=db_name,
         user=db_user,
         password=db_password,
         host=db_host,
         port=db_port
-        )
-        cur = conn.cursor()
-        cur.execute("""
+    )
+    cur = conn.cursor()
+    cur.execute("""
             CREATE TABLE IF NOT EXISTS garmin (
                 date DATE PRIMARY KEY,
                 total_steps INT,
@@ -39,10 +39,10 @@ def init_db():
                 body_battery_most_recent INT,
                 body_battery_at_wake INT,
                 body_battery_lowest INT
-            )
-        """)
-        conn.commit()
-        return conn, cur
+        )
+    """)
+    conn.commit()
+    return conn, cur
 
 
 def insert_data(cur, conn, data):
