@@ -8,6 +8,7 @@ def init_db():
     db_password = get_secret("daylog-db-password")
     db_host = os.environ.get("DB_HOST", "daylog-db-cnpg-rw.daylog.svc.cluster.local")
     db_port = get_secret("daylog-db-port")
+    
     conn = psycopg2.connect(
         dbname=db_name,
         user=db_user,
