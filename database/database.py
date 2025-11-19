@@ -3,11 +3,11 @@ import os
 from auth.azure_auth import get_secret
 
 def init_db():
-    db_name = get_secret("daylog-db-name")
+    db_name = "app"
     db_user = get_secret("daylog-db-username")
     db_password = get_secret("daylog-db-password")
     db_host = os.environ.get("DB_HOST", "daylog-db-cnpg-rw.daylog.svc.cluster.local")
-    db_port = get_secret("daylog-db-port")
+    db_port = "5432"
     
     conn = psycopg2.connect(
         dbname=db_name,
