@@ -1,3 +1,4 @@
+import os
 from garminconnect import Garmin
 from datetime import date, timedelta
 from database.database import init_db, insert_data
@@ -66,4 +67,8 @@ def sync_year():
 
 
 if __name__ == "__main__":
-    sync_yesterday()
+    sync_mode = os.environ.get("SYNC_MODE", "yesterday")
+    if sync_mode == "year":
+        sync_year()
+    else:
+        sync_yesterday()
