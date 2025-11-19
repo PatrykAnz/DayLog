@@ -3,7 +3,7 @@ import os
 from auth.azure_auth import get_secret
 
 def init_db():
-    db_name = "daylog-database"
+    db_name = "app"
     db_user = get_secret("daylog-db-username")
     db_password = get_secret("daylog-db-password")
     db_host = os.environ.get("DB_HOST", "daylog-db-cnpg-rw.daylog.svc.cluster.local")
