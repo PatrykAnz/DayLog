@@ -4,7 +4,7 @@ from datetime import date, timedelta
 from database.database import init_db, insert_data
 from auth.azure_auth import azure_auth
 
-START_DATE = date(2025, 6, 1)
+START_DATE = date(2024, 6, 1)
 
 def init_client():
     garmin_email, garmin_password = azure_auth("garmin-email", "garmin-password")
