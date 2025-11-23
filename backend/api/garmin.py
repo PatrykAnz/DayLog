@@ -63,7 +63,7 @@ def sync_year():
         data = fetch_day_data(client, day.isoformat())
         insert_data(cur, conn, data)
     if (i + 1) % 10 == 0:
-        print(f"{i + 1}/ {today - START_DATE + 1}")
+        print(f"{i + 1}/ {(today - START_DATE).days + 1}")
     cur.close()
     conn.close()
 
