@@ -209,7 +209,7 @@ def has_tokens():
         get_secret("daylog-withings-access-token")
         get_secret("daylog-withings-refresh-token")
         return True
-    except:
+    except Exception:
         return False
 
 if __name__ == "__main__":
