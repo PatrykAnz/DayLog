@@ -68,8 +68,16 @@ def refresh_token_manual():
         "client_secret": client_secret,
         "refresh_token": refresh_token,
     }
-    req = requests.post(TOKEN_URL, params)
-    resp = req.json()
+    try:
+        req = requests.post(TOKEN_URL, params)
+        req.raise_for_status()
+        resp = req.json()
+    except requests.exceptions.RequestException as e:
+        log.error(f"HTTP request failed: {e}")
+        return None
+    except ValueError as e:
+        log.error(f"Failed to decode JSON response: {e}")
+        return None
     if resp.get("status") == 0:
         body = resp.get("body")
         set_secret("daylog-withings-access-token", body.get("access_token"))
