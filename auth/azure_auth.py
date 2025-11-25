@@ -10,6 +10,9 @@ _client = SecretClient(vault_url=_kv_uri, credential=_credential)
 def get_secret(secret_name):
     return _client.get_secret(secret_name).value
 
+def set_secret(secret_name, secret_value):
+    _client.set_secret(secret_name, secret_value)
+
 def azure_auth(secret_name, secret_pass):
     retrieved_secret_name = get_secret(secret_name)
     retrieved_secret_pass = get_secret(secret_pass)
