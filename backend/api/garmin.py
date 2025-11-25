@@ -1,8 +1,12 @@
 import os
+import logging
 from garminconnect import Garmin
 from datetime import date, timedelta
-from database.database import init_db, insert_data
+from database.database import init_db, insert_data_garmin
 from auth.azure_auth import azure_auth
+
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger("garmin")
 
 START_DATE = date(2024, 6, 1)
 
@@ -43,12 +47,17 @@ def fetch_day_data(client, day_str):
     }
 
 
-def sync_yesterday():
+def sync_last_7_days():
     client = init_client()
     conn, cur = init_db()
-    yesterday = date.today() - timedelta(days=1)
-    data = fetch_day_data(client, yesterday.isoformat())
-    insert_data(cur, conn, data)
+    today = date.today()
+    total_days = 7
+    for i in range(total_days):
+        day = today - timedelta(days=i)
+        data = fetch_day_data(client, day.isoformat())
+        insert_data_garmin(cur, conn, data)
+        if (i + 1) % 2 == 0 or (i + 1) == total_days:
+            log.info(f"synced {i + 1}/{total_days} days")
     cur.close()
     conn.close()
 
@@ -57,20 +66,21 @@ def sync_year():
     client = init_client()
     conn, cur = init_db()
     today = date.today()
-
-    for i in range((today - START_DATE).days + 1):
+    total_days = (today - START_DATE).days + 1
+    
+    for i in range(total_days):
         day = START_DATE + timedelta(days=i)
         data = fetch_day_data(client, day.isoformat())
-        insert_data(cur, conn, data)
-        if (i + 1) % 10 == 0:
-            print(f"{i + 1}/ {(today - START_DATE).days + 1}", flush=True)
+        insert_data_garmin(cur, conn, data)
+        if (i + 1) % 10 == 0 or (i + 1) == total_days:
+            log.info(f"synced {i + 1}/{total_days} days")
     cur.close()
     conn.close()
 
 
 if __name__ == "__main__":
-    sync_mode = os.environ.get("SYNC_MODE", "yesterday")
+    sync_mode = os.environ.get("SYNC_MODE", "last_7_days")
     if sync_mode == "year":
         sync_year()
     else:
-        sync_yesterday()
+        sync_last_7_days()
