@@ -72,7 +72,7 @@ def sync_year():
         day = START_DATE + timedelta(days=i)
         data = fetch_day_data(client, day.isoformat())
         insert_data_garmin(cur, conn, data)
-        if (i + 1) % 10 == 0:
+        if (i + 1) % 10 == 0 or (i + 1) == total_days:
             log.info(f"synced {i + 1}/{total_days} days")
     cur.close()
     conn.close()
