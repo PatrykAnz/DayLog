@@ -5,8 +5,9 @@ from datetime import date, timedelta
 from database.database import init_db, insert_data_garmin
 from auth.azure_auth import azure_auth
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger("garmin")
+log.setLevel(logging.INFO)
 
 START_DATE = date(2024, 6, 1)
 

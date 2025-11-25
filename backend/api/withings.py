@@ -9,8 +9,9 @@ import uvicorn
 import logging
 from database.database import init_db, insert_data_withings
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger("withings")
+log.setLevel(logging.INFO)
 
 START_DATE = date(2024, 6, 1)
 
