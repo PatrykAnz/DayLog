@@ -66,7 +66,26 @@ def insert_data_garmin(cur, conn, data):
             %(avg_spo2)s, %(min_spo2)s, %(last7_avg_spo2)s, %(avg_sleep_resp)s, %(avg_waking_resp)s,
             %(body_battery_most_recent)s, %(body_battery_at_wake)s, %(body_battery_lowest)s
         )
-        ON CONFLICT (date) DO NOTHING
+        ON CONFLICT (date) DO UPDATE SET
+            total_steps = EXCLUDED.total_steps,
+            total_sleep_seconds = EXCLUDED.total_sleep_seconds,
+            deep_sleep_seconds = EXCLUDED.deep_sleep_seconds,
+            light_sleep_seconds = EXCLUDED.light_sleep_seconds,
+            rem_sleep_seconds = EXCLUDED.rem_sleep_seconds,
+            awake_sleep_seconds = EXCLUDED.awake_sleep_seconds,
+            min_hr = EXCLUDED.min_hr,
+            rest_hr = EXCLUDED.rest_hr,
+            last7_avg_rest_hr = EXCLUDED.last7_avg_rest_hr,
+            avg_stress = EXCLUDED.avg_stress,
+            stress_duration = EXCLUDED.stress_duration,
+            avg_spo2 = EXCLUDED.avg_spo2,
+            min_spo2 = EXCLUDED.min_spo2,
+            last7_avg_spo2 = EXCLUDED.last7_avg_spo2,
+            avg_sleep_resp = EXCLUDED.avg_sleep_resp,
+            avg_waking_resp = EXCLUDED.avg_waking_resp,
+            body_battery_most_recent = EXCLUDED.body_battery_most_recent,
+            body_battery_at_wake = EXCLUDED.body_battery_at_wake,
+            body_battery_lowest = EXCLUDED.body_battery_lowest
     """, data)
     conn.commit()
 
@@ -77,6 +96,13 @@ def insert_data_withings(cur, conn, data):
             %(date)s, %(weight_kg)s, %(fat_free_mass_kg)s, %(fat_ratio_percent)s,
             %(fat_mass_kg)s, %(muscle_mass_kg)s, %(hydration_kg)s, %(bone_mass_kg)s
         )
-        ON CONFLICT (date) DO NOTHING
+        ON CONFLICT (date) DO UPDATE SET
+            weight_kg = EXCLUDED.weight_kg,
+            fat_free_mass_kg = EXCLUDED.fat_free_mass_kg,
+            fat_ratio_percent = EXCLUDED.fat_ratio_percent,
+            fat_mass_kg = EXCLUDED.fat_mass_kg,
+            muscle_mass_kg = EXCLUDED.muscle_mass_kg,
+            hydration_kg = EXCLUDED.hydration_kg,
+            bone_mass_kg = EXCLUDED.bone_mass_kg
     """, data)
     conn.commit()

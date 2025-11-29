@@ -56,6 +56,8 @@ def sync_last_7_days():
     for i in range(1, total_days + 1):
         day = today - timedelta(days=i)
         data = fetch_day_data(client, day.isoformat())
+        if data.get("total_steps") is None and data.get("total_sleep_seconds") is None:
+            continue
         insert_data_garmin(cur, conn, data)
         if (i) % 2 == 0 or (i) == total_days:
             log.info(f"synced {i}/{total_days} days")
@@ -72,6 +74,8 @@ def sync_year():
     for i in range(total_days):
         day = START_DATE + timedelta(days=i)
         data = fetch_day_data(client, day.isoformat())
+        if data.get("total_steps") is None and data.get("total_sleep_seconds") is None:
+            continue
         insert_data_garmin(cur, conn, data)
         if (i + 1) % 10 == 0 or (i + 1) == total_days:
             log.info(f"synced {i + 1}/{total_days} days")
