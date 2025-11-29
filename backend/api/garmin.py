@@ -53,12 +53,12 @@ def sync_last_7_days():
     conn, cur = init_db()
     today = date.today()
     total_days = 7
-    for i in range(total_days):
+    for i in range(1, total_days + 1):
         day = today - timedelta(days=i)
         data = fetch_day_data(client, day.isoformat())
         insert_data_garmin(cur, conn, data)
-        if (i + 1) % 2 == 0 or (i + 1) == total_days:
-            log.info(f"synced {i + 1}/{total_days} days")
+        if (i) % 2 == 0 or (i) == total_days:
+            log.info(f"synced {i}/{total_days} days")
     cur.close()
     conn.close()
 
