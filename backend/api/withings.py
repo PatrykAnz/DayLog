@@ -22,6 +22,7 @@ GET_MEASUREMENTS_URL = "https://wbsapi.withings.net/measure?action=getmeas"
 app = FastAPI()
 
 def get_client_creds():
+    log.info("Fetching Withings client credentials")
     withings_client_id, withings_client_secret = azure_auth("daylog-withings-clientid", "daylog-withings-secret")
     return withings_client_id, withings_client_secret
 
@@ -57,6 +58,8 @@ def get_access_token(code: str):
         set_secret("daylog-withings-userid", body.get("userid"))
         log.info("Tokens saved to Azure Key Vault")
         sync_last_7_days()
+    else:
+        log.warning(f"Token request failed with status {resp.get('status')}")
     return resp
 
 def refresh_token_manual():
@@ -84,10 +87,12 @@ def refresh_token_manual():
         set_secret("daylog-withings-access-token", body.get("access_token"))
         set_secret("daylog-withings-refresh-token", body.get("refresh_token"))
         return body.get("access_token")
+    log.warning(f"Refresh token request failed with status {resp.get('status')}")
     return None
 
 class WithingsClient:
     def __init__(self):
+        log.info("Loading Withings access token")
         self.access_token = get_secret("daylog-withings-access-token")
 
     def get_day_measures(self, day_str):
@@ -187,31 +192,37 @@ def sync_last_7_days():
     conn, cur = init_db()
     today = date.today()
     total_days = 7
+    log.info("Starting Withings last_7_days sync")
     for i in range(total_days):
         day = today - timedelta(days=i)
         data = fetch_day_data(client, day.isoformat())
         if data:
             insert_data_withings(cur, conn, data)
-        if (i + 1) % 2 == 0 or (i + 1) == total_days:
-            log.info(f"synced {i + 1}/{total_days} days")
+            log.info(f"synced day {day.isoformat()} ({i + 1}/{total_days})")
+        else:
+            log.info(f"no data for day {day.isoformat()} ({i + 1}/{total_days})")
     cur.close()
     conn.close()
+    log.info("Finished Withings last_7_days sync")
 
 def sync_year():
     client = init_client()
     conn, cur = init_db()
     today = date.today()
     total_days = (today - START_DATE).days + 1
+    log.info(f"Starting Withings year sync from {START_DATE.isoformat()} to {today.isoformat()}")
     
     for i in range(total_days):
         day = START_DATE + timedelta(days=i)
         data = fetch_day_data(client, day.isoformat())
         if data:
             insert_data_withings(cur, conn, data)
-        if (i + 1) % 10 == 0:
-            log.info(f"synced {i + 1}/{total_days} days")
+            log.info(f"synced day {day.isoformat()} ({i + 1}/{total_days})")
+        else:
+            log.info(f"no data for day {day.isoformat()} ({i + 1}/{total_days})")
     cur.close()
     conn.close()
+    log.info("Finished Withings year sync")
 
 def has_tokens():
     try:
@@ -219,6 +230,7 @@ def has_tokens():
         get_secret("daylog-withings-refresh-token")
         return True
     except Exception:
+        log.warning("Withings tokens missing; skipping sync")
         return False
 
 if __name__ == "__main__":

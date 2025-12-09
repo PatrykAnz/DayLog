@@ -12,9 +12,11 @@ log.setLevel(logging.INFO)
 START_DATE = date(2024, 6, 1)
 
 def init_client():
+    log.info("Authenticating with Garmin")
     garmin_email, garmin_password = azure_auth("garmin-email", "garmin-password")
     client = Garmin(garmin_email, garmin_password)
     client.login()
+    log.info("Garmin authentication succeeded")
     return client
 
 
@@ -53,16 +55,17 @@ def sync_last_7_days():
     conn, cur = init_db()
     today = date.today()
     total_days = 7
+    log.info("Starting Garmin last_7_days sync")
     for i in range(1, total_days + 1):
         day = today - timedelta(days=i)
         data = fetch_day_data(client, day.isoformat())
         if data.get("total_steps") is None and data.get("total_sleep_seconds") is None:
             continue
         insert_data_garmin(cur, conn, data)
-        if (i) % 2 == 0 or (i) == total_days:
-            log.info(f"synced {i}/{total_days} days")
+        log.info(f"synced day {day.isoformat()} ({i}/{total_days})")
     cur.close()
     conn.close()
+    log.info("Finished Garmin last_7_days sync")
 
 
 def sync_year():
@@ -70,6 +73,7 @@ def sync_year():
     conn, cur = init_db()
     today = date.today()
     total_days = (today - START_DATE).days + 1
+    log.info(f"Starting Garmin year sync from {START_DATE.isoformat()} to {today.isoformat()}")
     
     for i in range(total_days):
         day = START_DATE + timedelta(days=i)
@@ -77,10 +81,10 @@ def sync_year():
         if data.get("total_steps") is None and data.get("total_sleep_seconds") is None:
             continue
         insert_data_garmin(cur, conn, data)
-        if (i + 1) % 10 == 0 or (i + 1) == total_days:
-            log.info(f"synced {i + 1}/{total_days} days")
+        log.info(f"synced day {day.isoformat()} ({i + 1}/{total_days})")
     cur.close()
     conn.close()
+    log.info("Finished Garmin year sync")
 
 
 if __name__ == "__main__":
