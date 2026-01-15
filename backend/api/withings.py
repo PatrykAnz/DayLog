@@ -21,9 +21,22 @@ GET_MEASUREMENTS_URL = "https://wbsapi.withings.net/measure?action=getmeas"
 
 app = FastAPI()
 
+WITHINGS_CLIENT_ID_SECRET = os.environ.get("WITHINGS_CLIENT_ID_SECRET", "withings-client-id")
+WITHINGS_CLIENT_SECRET_SECRET = os.environ.get("WITHINGS_CLIENT_SECRET_SECRET", "withings-client-secret")
+WITHINGS_ACCESS_TOKEN_SECRET = os.environ.get("WITHINGS_ACCESS_TOKEN_SECRET", "daylog-withings-access-token")
+WITHINGS_REFRESH_TOKEN_SECRET = os.environ.get("WITHINGS_REFRESH_TOKEN_SECRET", "daylog-withings-refresh-token")
+WITHINGS_USERID_SECRET = os.environ.get("WITHINGS_USERID_SECRET", "daylog-withings-userid")
+
 def get_client_creds():
-    log.info("Fetching Withings client credentials")
-    withings_client_id, withings_client_secret = azure_auth("daylog-withings-clientid", "daylog-withings-secret")
+    log.info(
+        "Fetching Withings client credentials (id_secret=%s, secret_secret=%s)",
+        WITHINGS_CLIENT_ID_SECRET,
+        WITHINGS_CLIENT_SECRET_SECRET,
+    )
+    withings_client_id, withings_client_secret = azure_auth(
+        WITHINGS_CLIENT_ID_SECRET,
+        WITHINGS_CLIENT_SECRET_SECRET,
+    )
     return withings_client_id, withings_client_secret
 
 @app.get("/")
@@ -53,9 +66,9 @@ def get_access_token(code: str):
     
     if resp.get("status") == 0:
         body = resp.get("body")
-        set_secret("daylog-withings-access-token", body.get("access_token"))
-        set_secret("daylog-withings-refresh-token", body.get("refresh_token"))
-        set_secret("daylog-withings-userid", body.get("userid"))
+        set_secret(WITHINGS_ACCESS_TOKEN_SECRET, body.get("access_token"))
+        set_secret(WITHINGS_REFRESH_TOKEN_SECRET, body.get("refresh_token"))
+        set_secret(WITHINGS_USERID_SECRET, body.get("userid"))
         log.info("Tokens saved to Azure Key Vault")
         sync_last_7_days()
     else:
@@ -64,7 +77,7 @@ def get_access_token(code: str):
 
 def refresh_token_manual():
     client_id, client_secret = get_client_creds()
-    refresh_token = get_secret("daylog-withings-refresh-token")
+    refresh_token = get_secret(WITHINGS_REFRESH_TOKEN_SECRET)
     params = {
         "action": "requesttoken",
         "grant_type": "refresh_token",
@@ -84,16 +97,16 @@ def refresh_token_manual():
         return None
     if resp.get("status") == 0:
         body = resp.get("body")
-        set_secret("daylog-withings-access-token", body.get("access_token"))
-        set_secret("daylog-withings-refresh-token", body.get("refresh_token"))
+        set_secret(WITHINGS_ACCESS_TOKEN_SECRET, body.get("access_token"))
+        set_secret(WITHINGS_REFRESH_TOKEN_SECRET, body.get("refresh_token"))
         return body.get("access_token")
     log.warning(f"Refresh token request failed with status {resp.get('status')}")
     return None
 
 class WithingsClient:
     def __init__(self):
-        log.info("Loading Withings access token")
-        self.access_token = get_secret("daylog-withings-access-token")
+        log.info("Loading Withings access token (access_token_secret=%s)", WITHINGS_ACCESS_TOKEN_SECRET)
+        self.access_token = get_secret(WITHINGS_ACCESS_TOKEN_SECRET)
 
     def get_day_measures(self, day_str):
         target_date = datetime.strptime(day_str, "%Y-%m-%d").date()
@@ -225,13 +238,21 @@ def sync_year():
     log.info("Finished Withings year sync")
 
 def has_tokens():
-    try:
-        get_secret("daylog-withings-access-token")
-        get_secret("daylog-withings-refresh-token")
+    access = get_secret(WITHINGS_ACCESS_TOKEN_SECRET, default=None)
+    refresh = get_secret(WITHINGS_REFRESH_TOKEN_SECRET, default=None)
+    if access and refresh:
         return True
-    except Exception:
-        log.warning("Withings tokens missing; skipping sync")
-        return False
+    missing = []
+    if not access:
+        missing.append(WITHINGS_ACCESS_TOKEN_SECRET)
+    if not refresh:
+        missing.append(WITHINGS_REFRESH_TOKEN_SECRET)
+    log.warning(
+        "Withings tokens missing; skipping sync (missing=%s). "
+        "These secrets are expected to be created by the OAuth callback flow (/callback).",
+        ", ".join(missing) if missing else "unknown",
+    )
+    return False
 
 if __name__ == "__main__":
     sync_mode = os.environ.get("SYNC_MODE", "last_7_days")
