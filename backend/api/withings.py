@@ -238,8 +238,14 @@ def sync_year():
     log.info("Finished Withings year sync")
 
 def has_tokens():
-    access = get_secret(WITHINGS_ACCESS_TOKEN_SECRET, default=None)
-    refresh = get_secret(WITHINGS_REFRESH_TOKEN_SECRET, default=None)
+    try:
+        access = get_secret(WITHINGS_ACCESS_TOKEN_SECRET)
+    except Exception:
+        access = None
+    try:
+        refresh = get_secret(WITHINGS_REFRESH_TOKEN_SECRET)
+    except Exception:
+        refresh = None
     if access and refresh:
         return True
     missing = []
